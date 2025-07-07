@@ -2,6 +2,12 @@
 
 This guide provides the necessary steps to manually deploy the backend and connect your domain using Nginx on a DigitalOcean Droplet.
 
+## Current Live Link (BASE URL)
+
+```bash
+http://170.64.234.56/api/v1
+```
+
 ---
 
 ## 🖥️ Server Login
