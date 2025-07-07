@@ -70,7 +70,7 @@ sudo systemctl reload nginx
 Your backend should now be accessible at:
 
 ```
-http://https://www.api.alexrodriguez.com.au/
+https://www.api.alexrodriguez.com.au/
 ```
 
 ---
