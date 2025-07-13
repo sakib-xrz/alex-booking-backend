@@ -21,14 +21,14 @@ router.post(
 
 router.patch(
   '/change-password',
-  auth(Role.SUPER_ADMIN, Role.COUNSELOR, Role.PATIENT),
+  auth(Role.SUPER_ADMIN, Role.COUNSELOR),
   validateRequest(AuthValidation.ChangePasswordSchema),
   AuthController.ChangePassword,
 );
 
 router.get(
   '/me',
-  auth(Role.SUPER_ADMIN, Role.COUNSELOR, Role.PATIENT),
+  auth(Role.SUPER_ADMIN, Role.COUNSELOR),
   AuthController.GetMyProfile,
 );
 
