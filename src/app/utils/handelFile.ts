@@ -1,27 +1,30 @@
 import multer from 'multer';
 import path from 'path';
 import {
-  v2 as cloudinary,
-  UploadApiResponse,
-  DeleteApiResponse,
-} from 'cloudinary';
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Request } from 'express';
 import config from '../config/index';
+import { v4 as uuidv4 } from 'uuid';
 
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: config.cloudinary.cloud_name,
-  api_key: config.cloudinary.api_key,
-  api_secret: config.cloudinary.api_secret,
+const spacesClient = new S3Client({
+  forcePathStyle: false,
+  endpoint: config.digitalocean.spaces_endpoint,
+  region: config.digitalocean.spaces_region,
+  credentials: {
+    accessKeyId: config.digitalocean.spaces_access_key!,
+    secretAccessKey: config.digitalocean.spaces_secret_key!,
+  },
 });
 
-// Allowed file types
 const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
 
-// Multer memory storage (for serverless compatibility)
 const storage = multer.memoryStorage();
 
-// File filter for multer
 const fileFilter = (
   _req: Request,
   file: Express.Multer.File,
@@ -43,78 +46,133 @@ const fileFilter = (
   }
 };
 
-// Multer instance
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB limit
+  limits: { fileSize: 30 * 1024 * 1024 },
 });
 
-// Upload file to Cloudinary directly from memory
-const uploadToCloudinary = async (
+const uploadToSpaces = async (
   file: Express.Multer.File,
-  options: { folder?: string; public_id?: string } = {},
-): Promise<UploadApiResponse | undefined> => {
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream(
-        {
-          folder: options.folder || 'uploads',
-          public_id: options.public_id || Date.now().toString(),
-          use_filename: true,
-          overwrite: true,
-          invalidate: true,
-        },
-        (error, result) => {
-          if (error) {
-            return reject(
-              new Error(`Cloudinary upload failed: ${error.message}`),
-            );
-          }
-          resolve(result);
-        },
-      )
-      .end(file.buffer); // Send file buffer directly
-  });
-};
-
-// Delete file from Cloudinary
-const deleteFromCloudinary = async (
-  publicIds: string[],
-): Promise<DeleteApiResponse | undefined> => {
-  return new Promise((resolve, reject) => {
-    cloudinary.api.delete_resources(publicIds, (error, result) => {
-      if (error) {
-        return reject(
-          new Error(`Failed to delete from Cloudinary: ${error.message}`),
-        );
-      }
-      resolve(result);
-    });
-  });
-};
-
-const extractPublicIdFromUrl = (url: string): string | null => {
+  options: { folder?: string; filename?: string } = {},
+): Promise<{ url: string; key: string }> => {
   try {
-    const urlParts = url.split('/');
-    const uploadIndex = urlParts.findIndex((part) => part === 'upload');
-    if (uploadIndex !== -1 && urlParts[uploadIndex + 2]) {
-      const publicIdWithExtension = urlParts.slice(uploadIndex + 2).join('/');
-      // Remove file extension
-      const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, '');
-      return publicId;
+    const fileExtension = path.extname(file.originalname);
+    const fileName = options.filename || `${uuidv4()}${fileExtension}`;
+    const folder = options.folder || 'uploads';
+    const key = `${folder}/${fileName}`;
+
+    const uploadParams = {
+      Bucket: config.digitalocean.spaces_bucket!,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      ACL: 'public-read' as const,
+    };
+
+    const command = new PutObjectCommand(uploadParams);
+    await spacesClient.send(command);
+
+    const publicUrl = `${config.digitalocean.spaces_endpoint}/${config.digitalocean.spaces_bucket}/${key}`;
+
+    return {
+      url: publicUrl,
+      key: key,
+    };
+  } catch (error) {
+    console.error('Error uploading to DigitalOcean Spaces:', error);
+    throw new Error(`DigitalOcean Spaces upload failed: ${error}`);
+  }
+};
+
+const deleteFromSpaces = async (key: string): Promise<void> => {
+  try {
+    const deleteParams = {
+      Bucket: config.digitalocean.spaces_bucket!,
+      Key: key,
+    };
+
+    const command = new DeleteObjectCommand(deleteParams);
+    await spacesClient.send(command);
+  } catch (error) {
+    console.error('Error deleting from DigitalOcean Spaces:', error);
+    throw new Error(`Failed to delete from DigitalOcean Spaces: ${error}`);
+  }
+};
+
+const deleteMultipleFromSpaces = async (keys: string[]): Promise<void> => {
+  try {
+    if (keys.length === 0) return;
+
+    const deleteParams = {
+      Bucket: config.digitalocean.spaces_bucket!,
+      Delete: {
+        Objects: keys.map((key) => ({ Key: key })),
+        Quiet: true,
+      },
+    };
+
+    const command = new DeleteObjectsCommand(deleteParams);
+    await spacesClient.send(command);
+  } catch (error) {
+    console.error(
+      'Error deleting multiple files from DigitalOcean Spaces:',
+      error,
+    );
+    throw new Error(
+      `Failed to delete multiple files from DigitalOcean Spaces: ${error}`,
+    );
+  }
+};
+
+const extractKeyFromUrl = (url: string): string | null => {
+  try {
+    const urlObj = new URL(url);
+    const bucketName = config.digitalocean.spaces_bucket!;
+
+    if (urlObj.hostname.startsWith(bucketName)) {
+      return urlObj.pathname.slice(1);
+    } else {
+      const pathParts = urlObj.pathname.split('/');
+      if (pathParts[1] === bucketName) {
+        return pathParts.slice(2).join('/');
+      }
     }
+
     return null;
   } catch (error) {
-    console.log('Error from cloudinary while extracting public id', error);
+    console.error('Error extracting key from URL:', error);
     return null;
   }
 };
 
-// Export functions
+const generateSignedUrl = async (
+  key: string,
+  expiresIn: number = 3600,
+): Promise<string> => {
+  try {
+    const command = new PutObjectCommand({
+      Bucket: config.digitalocean.spaces_bucket!,
+      Key: key,
+    });
+
+    const signedUrl = await getSignedUrl(spacesClient, command, {
+      expiresIn,
+    });
+
+    return signedUrl;
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    throw new Error(`Failed to generate signed URL: ${error}`);
+  }
+};
+
 export {
   upload,
-  uploadToCloudinary,
-  deleteFromCloudinary,
-  extractPublicIdFromUrl,
+  uploadToSpaces,
+  deleteFromSpaces,
+  deleteMultipleFromSpaces,
+  extractKeyFromUrl,
+  generateSignedUrl,
+  spacesClient,
 };

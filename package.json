@@ -18,7 +18,10 @@
     "db:reset": "npx prisma migrate reset"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.844.0",
+    "@aws-sdk/s3-request-presigner": "^3.844.0",
     "@prisma/client": "^5.11.0",
+    "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "cloudinary": "^2.6.0",
@@ -47,6 +50,7 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.14.0",
     "globals": "^15.14.0",
     "prettier": "^3.4.2",

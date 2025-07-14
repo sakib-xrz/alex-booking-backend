@@ -12,22 +12,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractPublicIdFromUrl = exports.deleteFromCloudinary = exports.uploadToCloudinary = exports.upload = void 0;
+exports.spacesClient = exports.generateSignedUrl = exports.extractKeyFromUrl = exports.deleteMultipleFromSpaces = exports.deleteFromSpaces = exports.uploadToSpaces = exports.upload = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
-const cloudinary_1 = require("cloudinary");
+const client_s3_1 = require("@aws-sdk/client-s3");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const index_1 = __importDefault(require("../config/index"));
-// Cloudinary configuration
-cloudinary_1.v2.config({
-    cloud_name: index_1.default.cloudinary.cloud_name,
-    api_key: index_1.default.cloudinary.api_key,
-    api_secret: index_1.default.cloudinary.api_secret,
+const uuid_1 = require("uuid");
+const spacesClient = new client_s3_1.S3Client({
+    forcePathStyle: false,
+    endpoint: index_1.default.digitalocean.spaces_endpoint,
+    region: index_1.default.digitalocean.spaces_region,
+    credentials: {
+        accessKeyId: index_1.default.digitalocean.spaces_access_key,
+        secretAccessKey: index_1.default.digitalocean.spaces_secret_key,
+    },
 });
-// Allowed file types
+exports.spacesClient = spacesClient;
 const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
-// Multer memory storage (for serverless compatibility)
 const storage = multer_1.default.memoryStorage();
-// File filter for multer
 const fileFilter = (_req, file, cb) => {
     const extname = allowedTypes.test(path_1.default.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
@@ -38,60 +41,109 @@ const fileFilter = (_req, file, cb) => {
         cb(new Error('Only images (jpeg, jpg, png, gif), PDFs, and DOC/DOCX files are allowed'));
     }
 };
-// Multer instance
 const upload = (0, multer_1.default)({
     storage: storage,
     fileFilter: fileFilter,
-    limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB limit
+    limits: { fileSize: 30 * 1024 * 1024 },
 });
 exports.upload = upload;
-// Upload file to Cloudinary directly from memory
-const uploadToCloudinary = (file_1, ...args_1) => __awaiter(void 0, [file_1, ...args_1], void 0, function* (file, options = {}) {
-    return new Promise((resolve, reject) => {
-        cloudinary_1.v2.uploader
-            .upload_stream({
-            folder: options.folder || 'uploads',
-            public_id: options.public_id || Date.now().toString(),
-            use_filename: true,
-            overwrite: true,
-            invalidate: true,
-        }, (error, result) => {
-            if (error) {
-                return reject(new Error(`Cloudinary upload failed: ${error.message}`));
-            }
-            resolve(result);
-        })
-            .end(file.buffer); // Send file buffer directly
-    });
-});
-exports.uploadToCloudinary = uploadToCloudinary;
-// Delete file from Cloudinary
-const deleteFromCloudinary = (publicIds) => __awaiter(void 0, void 0, void 0, function* () {
-    return new Promise((resolve, reject) => {
-        cloudinary_1.v2.api.delete_resources(publicIds, (error, result) => {
-            if (error) {
-                return reject(new Error(`Failed to delete from Cloudinary: ${error.message}`));
-            }
-            resolve(result);
-        });
-    });
-});
-exports.deleteFromCloudinary = deleteFromCloudinary;
-const extractPublicIdFromUrl = (url) => {
+const uploadToSpaces = (file_1, ...args_1) => __awaiter(void 0, [file_1, ...args_1], void 0, function* (file, options = {}) {
     try {
-        const urlParts = url.split('/');
-        const uploadIndex = urlParts.findIndex((part) => part === 'upload');
-        if (uploadIndex !== -1 && urlParts[uploadIndex + 2]) {
-            const publicIdWithExtension = urlParts.slice(uploadIndex + 2).join('/');
-            // Remove file extension
-            const publicId = publicIdWithExtension.replace(/\.[^/.]+$/, '');
-            return publicId;
+        const fileExtension = path_1.default.extname(file.originalname);
+        const fileName = options.filename || `${(0, uuid_1.v4)()}${fileExtension}`;
+        const folder = options.folder || 'uploads';
+        const key = `${folder}/${fileName}`;
+        const uploadParams = {
+            Bucket: index_1.default.digitalocean.spaces_bucket,
+            Key: key,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+            ACL: 'public-read',
+        };
+        const command = new client_s3_1.PutObjectCommand(uploadParams);
+        yield spacesClient.send(command);
+        const publicUrl = `${index_1.default.digitalocean.spaces_endpoint}/${index_1.default.digitalocean.spaces_bucket}/${key}`;
+        return {
+            url: publicUrl,
+            key: key,
+        };
+    }
+    catch (error) {
+        console.error('Error uploading to DigitalOcean Spaces:', error);
+        throw new Error(`DigitalOcean Spaces upload failed: ${error}`);
+    }
+});
+exports.uploadToSpaces = uploadToSpaces;
+const deleteFromSpaces = (key) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const deleteParams = {
+            Bucket: index_1.default.digitalocean.spaces_bucket,
+            Key: key,
+        };
+        const command = new client_s3_1.DeleteObjectCommand(deleteParams);
+        yield spacesClient.send(command);
+    }
+    catch (error) {
+        console.error('Error deleting from DigitalOcean Spaces:', error);
+        throw new Error(`Failed to delete from DigitalOcean Spaces: ${error}`);
+    }
+});
+exports.deleteFromSpaces = deleteFromSpaces;
+const deleteMultipleFromSpaces = (keys) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (keys.length === 0)
+            return;
+        const deleteParams = {
+            Bucket: index_1.default.digitalocean.spaces_bucket,
+            Delete: {
+                Objects: keys.map((key) => ({ Key: key })),
+                Quiet: true,
+            },
+        };
+        const command = new client_s3_1.DeleteObjectsCommand(deleteParams);
+        yield spacesClient.send(command);
+    }
+    catch (error) {
+        console.error('Error deleting multiple files from DigitalOcean Spaces:', error);
+        throw new Error(`Failed to delete multiple files from DigitalOcean Spaces: ${error}`);
+    }
+});
+exports.deleteMultipleFromSpaces = deleteMultipleFromSpaces;
+const extractKeyFromUrl = (url) => {
+    try {
+        const urlObj = new URL(url);
+        const bucketName = index_1.default.digitalocean.spaces_bucket;
+        if (urlObj.hostname.startsWith(bucketName)) {
+            return urlObj.pathname.slice(1);
+        }
+        else {
+            const pathParts = urlObj.pathname.split('/');
+            if (pathParts[1] === bucketName) {
+                return pathParts.slice(2).join('/');
+            }
         }
         return null;
     }
     catch (error) {
-        console.log('Error from cloudinary while extracting public id', error);
+        console.error('Error extracting key from URL:', error);
         return null;
     }
 };
-exports.extractPublicIdFromUrl = extractPublicIdFromUrl;
+exports.extractKeyFromUrl = extractKeyFromUrl;
+const generateSignedUrl = (key_1, ...args_1) => __awaiter(void 0, [key_1, ...args_1], void 0, function* (key, expiresIn = 3600) {
+    try {
+        const command = new client_s3_1.PutObjectCommand({
+            Bucket: index_1.default.digitalocean.spaces_bucket,
+            Key: key,
+        });
+        const signedUrl = yield (0, s3_request_presigner_1.getSignedUrl)(spacesClient, command, {
+            expiresIn,
+        });
+        return signedUrl;
+    }
+    catch (error) {
+        console.error('Error generating signed URL:', error);
+        throw new Error(`Failed to generate signed URL: ${error}`);
+    }
+});
+exports.generateSignedUrl = generateSignedUrl;

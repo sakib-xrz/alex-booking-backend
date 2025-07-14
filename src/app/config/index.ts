@@ -15,9 +15,11 @@ export default {
   frontend_base_url: process.env.FRONTEND_BASE_URL,
   backend_base_url: process.env.BACKEND_BASE_URL,
 
-  cloudinary: {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+  digitalocean: {
+    spaces_endpoint: process.env.DO_SPACES_ENDPOINT,
+    spaces_bucket: process.env.DO_SPACES_BUCKET,
+    spaces_access_key: process.env.DO_SPACES_ACCESS_KEY,
+    spaces_secret_key: process.env.DO_SPACES_SECRET_KEY,
+    spaces_region: process.env.DO_SPACES_REGION,
   },
 };
