@@ -20,7 +20,7 @@ const auth = (...roles: Role[]) => {
       }
 
       const token = bearerToken.split(' ')[1];
-      console.log(token)
+
       if (!token) {
         throw new AppError(
           httpStatus.UNAUTHORIZED,
@@ -46,12 +46,12 @@ const auth = (...roles: Role[]) => {
         );
       }
 
-      // if (roles.length && !roles.includes(user.role)) {
-      //   throw new AppError(
-      //     httpStatus.FORBIDDEN,
-      //     "You don't have permission to access this route",
-      //   );
-      // }
+      if (roles.length && !roles.includes(user.role)) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "You don't have permission to access this route",
+        );
+      }
 
       req.user = user;
 
