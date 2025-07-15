@@ -37,6 +37,8 @@ const Register = async (payload: User) => {
   // Prepare JWT payload
   const jwtPayload = {
     id: result.id,
+    name: result.name,
+    profile_picture: result.profile_picture,
     email: result.email,
     role: result.role,
   };
@@ -70,6 +72,8 @@ const Login = async (payload: User) => {
 
   const jwtPayload = {
     id: user.id,
+    name: user.name,
+    profile_picture: user.profile_picture,
     email: user.email,
     role: user.role,
   };
