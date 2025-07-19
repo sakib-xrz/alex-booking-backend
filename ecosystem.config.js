@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'alex-booking-backend',
       script: './dist/server.js',
-      cwd: '/home/alexapp/app/alex-booking-backend',
+      cwd: '/root/app/alex-booking-backend',
       instances: 1,
       exec_mode: 'fork',
       env: {
