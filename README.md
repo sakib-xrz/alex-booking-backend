@@ -5,7 +5,7 @@ This guide provides the necessary steps to manually deploy the backend and conne
 ## Current Live Link (BASE URL)
 
 ```bash
-http://170.64.234.56/api/v1
+https://api.209.38.80.244.nip.io/api/v1
 ```
 
 ---
@@ -13,15 +13,7 @@ http://170.64.234.56/api/v1
 ## 🖥️ Server Login
 
 ```bash
-ssh root@170.64.234.56
-```
-
----
-
-## 👤 Switch to App User
-
-```bash
-su - alexapp
+ssh root@209.38.80.244
 ```
 
 ---
@@ -29,7 +21,7 @@ su - alexapp
 ## 🔄 Run Deployment Script
 
 ```bash
-./update.sh
+./deploy.sh
 ```
 
 ---
@@ -92,4 +84,4 @@ sudo certbot --nginx -d https://www.api.alexrodriguez.com.au/
 
 ---
 
-> 📌 Make sure your domain `https://www.api.alexrodriguez.com.au/` is pointing to your Droplet's IP (`170.64.234.56`) via DNS A record.
+> 📌 Make sure your domain `https://www.api.alexrodriguez.com.au/` is pointing to your Droplet's IP (`209.38.80.244`) via DNS A record.
