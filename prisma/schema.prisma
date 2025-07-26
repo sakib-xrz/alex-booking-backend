@@ -77,3 +77,15 @@ model TimeSlot {
 
 //   timeSlots   TimeSlot[] // 1-to-many relation
 // }
+
+model Client {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("clients")
+}
