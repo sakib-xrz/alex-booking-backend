@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "TimeSlot" ALTER COLUMN "status" SET DEFAULT 'AVAILABLE';

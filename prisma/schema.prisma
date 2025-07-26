@@ -12,16 +12,68 @@ enum Role {
   COUNSELOR
 }
 
+enum SlotType {
+  ONLINE
+  IN_PERSON
+}
+
+enum SlotStatus {
+  AVAILABLE
+  PROCESSING
+  BOOKED
+  CANCELLED
+}
+
 model User {
-  id              String   @id @default(uuid())
+  id              String     @id @default(uuid())
   name            String
-  email           String   @unique
+  email           String     @unique
   password        String
-  role            Role     @default(COUNSELOR)
+  role            Role       @default(COUNSELOR)
   profile_picture String?
-  is_deleted      Boolean  @default(false)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  is_deleted      Boolean    @default(false)
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  Calendar        Calendar[]
 
   @@map("users")
 }
+
+model Calendar {
+  id          String   @id @default(uuid())
+  counselorId String
+  date        DateTime
+
+  counselor User       @relation(fields: [counselorId], references: [id])
+  TimeSlot  TimeSlot[]
+
+  @@unique([counselorId, date])
+}
+
+model TimeSlot {
+  id         String     @id @default(uuid())
+  calendarId String
+  roomId     String?
+  startTime  String
+  endTime    String
+  type       SlotType
+  status     SlotStatus @default(AVAILABLE)
+
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  // room        Room?        @relation(fields: [roomId], references: [id])
+  // appointment Appointment?
+
+  @@index([calendarId, startTime, endTime])
+}
+
+// model Room {
+//   id          String     @id @default(uuid())
+//   name        String     @unique
+//   location    String?
+//   capacity    Int?
+//   isActive    Boolean    @default(true)
+//   createdAt   DateTime   @default(now())
+//   updatedAt   DateTime   @updatedAt
+
+//   timeSlots   TimeSlot[] // 1-to-many relation
+// }
