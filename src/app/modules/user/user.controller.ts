@@ -18,6 +18,28 @@ const UpdateProfilePicture = catchAsync(async (req, res) => {
   });
 });
 
+const GetProfile = catchAsync(async (req, res) => {
+  const result = await UserService.GetUserProfile(req.user.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Profile retrieved successfully',
+    data: result,
+  });
+});
+
+const UpdateProfile = catchAsync(async (req, res) => {
+  const result = await UserService.UpdateUserProfile(req.user.id, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Profile updated successfully',
+    data: result,
+  });
+});
+
 export const UserController = {
   UpdateProfilePicture,
+  GetProfile,
+  UpdateProfile,
 };

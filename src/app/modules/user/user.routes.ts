@@ -1,16 +1,28 @@
 import express from 'express';
-import { UserController } from './user.controller';
-import auth from '../../middlewares/auth';
 import { Role } from '@prisma/client';
-import { upload } from '../../utils/handelFile';
+import auth from '../../middlewares/auth';
+import validateRequest from '../../middlewares/validateRequest';
+import { UserController } from './user.controller';
+import UserValidation from './user.validation';
+import multer from 'multer';
 
 const router = express.Router();
+const upload = multer();
+
+router.use(auth(Role.SUPER_ADMIN, Role.COUNSELOR));
+
+router.get('/profile', UserController.GetProfile);
 
 router.patch(
-  '/profile-picture',
-  auth(Role.SUPER_ADMIN, Role.COUNSELOR),
+  '/profile',
+  validateRequest(UserValidation.updateProfileSchema),
+  UserController.UpdateProfile,
+);
+
+router.patch(
+  '/profile/picture',
   upload.single('image'),
   UserController.UpdateProfilePicture,
 );
 
-export const UserRoute = router;
+export const UserRoutes = router;
