@@ -19,10 +19,10 @@ const GetCalenders = async (counselorId: string) => {
 
   const calender = calenderDates.map((item) => ({
     id: item.id,
-    iso_date: item.date,
+    isoDate: item.date,
     date: item.date.toISOString().split('T')[0],
-    available_slots: item._count.time_slots,
-    have_slots: !!item._count.time_slots,
+    availableSlots: item._count.time_slots,
+    haveSlots: !!item._count.time_slots,
   }));
   return { calender };
 };
@@ -60,7 +60,17 @@ const GetDateSlots = async (calendarId: string, type?: SessionType) => {
     },
   });
 
-  return result;
+  const formattedResult = result.map((slot) => ({
+    id: slot.id,
+    startTime: slot.start_time,
+    endTime: slot.end_time,
+    type: slot.type,
+    status: slot.status,
+    createdAt: slot.created_at,
+    updatedAt: slot.updated_at,
+  }));
+
+  return formattedResult;
 };
 
 interface CreateSlotData {
