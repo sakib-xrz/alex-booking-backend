@@ -30,15 +30,6 @@ const UpdateProfilePicture = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
-const GetProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_services_1.UserService.GetUserProfile(req.user.id);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: 'Profile retrieved successfully',
-        data: result,
-    });
-}));
 const UpdateProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_services_1.UserService.UpdateUserProfile(req.user.id, req.body);
     (0, sendResponse_1.default)(res, {
@@ -50,6 +41,5 @@ const UpdateProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 exports.UserController = {
     UpdateProfilePicture,
-    GetProfile,
     UpdateProfile,
 };

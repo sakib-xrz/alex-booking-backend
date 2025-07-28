@@ -60,27 +60,6 @@ const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
   return result;
 };
 
-const GetUserProfile = async (id: string) => {
-  const user = await prisma.user.findUnique({
-    where: { id, is_deleted: false },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      profile_picture: true,
-      role: true,
-      created_at: true,
-      updated_at: true,
-    },
-  });
-
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  return user;
-};
-
 const UpdateUserProfile = async (id: string, data: { name?: string }) => {
   const user = await prisma.user.findUnique({
     where: { id, is_deleted: false },
@@ -109,6 +88,5 @@ const UpdateUserProfile = async (id: string, data: { name?: string }) => {
 
 export const UserService = {
   UpdateProfilePicture,
-  GetUserProfile,
   UpdateUserProfile,
 };

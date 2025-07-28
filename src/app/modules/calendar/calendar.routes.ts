@@ -15,18 +15,15 @@ router
   .route('/')
   .get(CalendarController.GetCalendar)
   .post(
-    validateRequest(CalendarValidation.createCalendarSchema),
+    validateRequest(CalendarValidation.CreateCalendarSchema),
     CalendarController.PostCalendarDate,
   );
 
 router
   .route('/:id/slots')
-  .get(
-    validateRequest(CalendarValidation.getSlotsSchema),
-    CalendarController.GetDateSlots,
-  )
+  .get(CalendarController.GetDateSlots)
   .post(
-    validateRequest(CalendarValidation.createSlotsSchema),
+    validateRequest(CalendarValidation.CreateSlotsSchema),
     CalendarController.PostDateSlots,
   );
 

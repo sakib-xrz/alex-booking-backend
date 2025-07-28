@@ -58,24 +58,6 @@ const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, fun
     });
     return result;
 });
-const GetUserProfile = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield prisma_1.default.user.findUnique({
-        where: { id, is_deleted: false },
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            profile_picture: true,
-            role: true,
-            created_at: true,
-            updated_at: true,
-        },
-    });
-    if (!user) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
-    }
-    return user;
-});
 const UpdateUserProfile = (id, data) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.default.user.findUnique({
         where: { id, is_deleted: false },
@@ -100,6 +82,5 @@ const UpdateUserProfile = (id, data) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.UserService = {
     UpdateProfilePicture,
-    GetUserProfile,
     UpdateUserProfile,
 };

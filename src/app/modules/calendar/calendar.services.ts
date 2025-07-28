@@ -19,10 +19,10 @@ const GetCalenders = async (counselorId: string) => {
 
   const calender = calenderDates.map((item) => ({
     id: item.id,
-    isoDate: item.date,
+    iso_date: item.date,
     date: item.date.toISOString().split('T')[0],
-    availableSlots: item._count.time_slots,
-    haveSlots: !!item._count.time_slots,
+    available_slots: item._count.time_slots,
+    have_slots: !!item._count.time_slots,
   }));
   return { calender };
 };

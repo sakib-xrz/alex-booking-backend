@@ -11,8 +11,6 @@ const upload = multer();
 
 router.use(auth(Role.SUPER_ADMIN, Role.COUNSELOR));
 
-router.get('/profile', UserController.GetProfile);
-
 router.patch(
   '/profile',
   validateRequest(UserValidation.updateProfileSchema),

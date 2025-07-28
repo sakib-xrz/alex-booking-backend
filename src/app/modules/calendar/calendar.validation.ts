@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { SessionType } from '@prisma/client';
 
-const createCalendarSchema = z.object({
+const CreateCalendarSchema = z.object({
   body: z.object({
     date: z.string().datetime().or(z.date()),
   }),
 });
 
-const createSlotsSchema = z.object({
+const CreateSlotsSchema = z.object({
   body: z.object({
     data: z.array(
       z.object({
@@ -19,16 +19,9 @@ const createSlotsSchema = z.object({
   }),
 });
 
-const getSlotsSchema = z.object({
-  query: z.object({
-    type: z.nativeEnum(SessionType).optional(),
-  }),
-});
-
 const CalendarValidation = {
-  createCalendarSchema,
-  createSlotsSchema,
-  getSlotsSchema,
+  CreateCalendarSchema,
+  CreateSlotsSchema,
 };
 
 export default CalendarValidation;

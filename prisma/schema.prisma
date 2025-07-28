@@ -84,8 +84,8 @@ model TimeSlot {
   id          String      @id @default(uuid())
   calendar_id String
   // room_id     String?
-  start_time  DateTime    @db.Time
-  end_time    DateTime    @db.Time
+  start_time  String
+  end_time    String
   type        SessionType
   status      SlotStatus  @default(AVAILABLE)
   created_at  DateTime    @default(now())
@@ -146,8 +146,8 @@ model Appointment {
   time_slot_id String            @unique
   session_type SessionType
   date         DateTime          @db.Date
-  start_time   DateTime          @db.Time
-  end_time     DateTime          @db.Time
+  start_time   String
+  end_time     String
   notes        String?
   status       AppointmentStatus @default(PENDING)
   created_at   DateTime          @default(now())
