@@ -12,44 +12,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
-const user_services_1 = require("./user.services");
-const AppError_1 = __importDefault(require("../../errors/AppError"));
-const UpdateProfilePicture = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!req.file) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Image is required');
-    }
-    const result = yield user_services_1.UserService.UpdateProfilePicture(req.user.id, req.file);
+const publicCalendar_services_1 = __importDefault(require("./publicCalendar.services"));
+const GetCounselorCalendar = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield publicCalendar_services_1.default.GetCounselorCalendar(req.params.counselorId);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Profile picture updated successfully',
+        message: 'Counselor calendar retrieved successfully',
         data: result,
     });
 }));
-const GetProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_services_1.UserService.GetUserProfile(req.user.id);
+const GetCounselorDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const type = req.query.type;
+    const result = yield publicCalendar_services_1.default.GetCounselorDateSlots(req.params.calenderId, type);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Profile retrieved successfully',
+        message: 'Calendar slots retrieved successfully',
         data: result,
     });
 }));
-const UpdateProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_services_1.UserService.UpdateUserProfile(req.user.id, req.body);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: 'Profile updated successfully',
-        data: result,
-    });
-}));
-exports.UserController = {
-    UpdateProfilePicture,
-    GetProfile,
-    UpdateProfile,
+const PublicCalendarController = {
+    GetCounselorCalendar,
+    GetCounselorDateSlots,
 };
+exports.default = PublicCalendarController;

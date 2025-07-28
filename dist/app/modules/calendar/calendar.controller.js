@@ -21,27 +21,27 @@ const GetCalendar = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'All calender dates',
+        message: 'All calendar dates retrieved successfully',
         data: result,
     });
 }));
 const PostCalendarDate = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const date = req.body.date || [];
+    const date = req.body.date;
     const result = yield calendar_services_1.default.CreateCalenderDate(req.user.id, date);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,
-        message: 'Calender date created successfully',
+        message: 'Calendar date created successfully',
         data: result,
     });
 }));
 const GetDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const type = req.query.type || 'ONLINE';
+    const type = req.query.type;
     const result = yield calendar_services_1.default.GetDateSlots(req.params.id, type);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Calender date created successfully',
+        message: 'Calendar slots retrieved successfully',
         data: result,
     });
 }));
@@ -50,7 +50,7 @@ const PostDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,
-        message: 'Calender date created successfully',
+        message: 'Calendar slots created successfully',
         data: result,
     });
 }));

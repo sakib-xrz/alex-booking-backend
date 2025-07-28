@@ -7,11 +7,15 @@ const express_1 = __importDefault(require("express"));
 const auth_routes_1 = require("../modules/auth/auth.routes");
 const user_routes_1 = require("../modules/user/user.routes");
 const calendar_routes_1 = require("../modules/calendar/calendar.routes");
+const client_routes_1 = require("../modules/client/client.routes");
+const publicCalendar_routes_1 = require("../modules/publicCalendar/publicCalendar.routes");
 const router = express_1.default.Router();
 const routes = [
     { path: '/auth', route: auth_routes_1.AuthRoutes },
-    { path: '/users', route: user_routes_1.UserRoute },
+    { path: '/users', route: user_routes_1.UserRoutes },
     { path: '/calendars', route: calendar_routes_1.CalendarRoutes },
+    { path: '/clients', route: client_routes_1.ClientRoutes },
+    { path: '/public-calenders', route: publicCalendar_routes_1.PublicCalendarRoutes },
 ];
 routes.forEach((route) => {
     router.use(route.path, route.route);
