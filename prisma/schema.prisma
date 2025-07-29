@@ -119,8 +119,7 @@ model TimeSlot {
 
 model Client {
   id            String   @id @default(uuid())
-  first_name    String
-  last_name     String
+  name          String
   email         String   @unique
   phone         String
   date_of_birth DateTime @db.Date
@@ -146,8 +145,6 @@ model Appointment {
   time_slot_id String            @unique
   session_type SessionType
   date         DateTime          @db.Date
-  start_time   String
-  end_time     String
   notes        String?
   status       AppointmentStatus @default(PENDING)
   created_at   DateTime          @default(now())
