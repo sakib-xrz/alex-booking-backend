@@ -189,3 +189,16 @@ model Payment {
   @@index([transaction_id])
   @@map("payments")
 }
+
+model EmailOTPVerification {
+  id          String   @id @default(uuid())
+  email       String   @db.VarChar(255)
+  otp         String   @db.VarChar(6)
+  expires_at  DateTime
+  is_verified Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  @@index([email])
+  @@index([otp])
+  @@map("email_otp_verifications")
+}
