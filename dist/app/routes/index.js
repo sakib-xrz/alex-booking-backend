@@ -9,6 +9,7 @@ const user_routes_1 = require("../modules/user/user.routes");
 const calendar_routes_1 = require("../modules/calendar/calendar.routes");
 const client_routes_1 = require("../modules/client/client.routes");
 const publicCalendar_routes_1 = require("../modules/publicCalendar/publicCalendar.routes");
+const publicAppointment_routes_1 = require("../modules/publicAppointment/publicAppointment.routes");
 const router = express_1.default.Router();
 const routes = [
     { path: '/auth', route: auth_routes_1.AuthRoutes },
@@ -16,6 +17,7 @@ const routes = [
     { path: '/calendars', route: calendar_routes_1.CalendarRoutes },
     { path: '/clients', route: client_routes_1.ClientRoutes },
     { path: '/public-calenders', route: publicCalendar_routes_1.PublicCalendarRoutes },
+    { path: '/public-appointments', route: publicAppointment_routes_1.PublicAppointmentRoutes },
 ];
 routes.forEach((route) => {
     router.use(route.path, route.route);
