@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import PublicCalendarService from './publicCalendar.services';
-import { SessionType } from '@prisma/client';
+// import { SessionType } from '@prisma/client';
 
 const GetCounselorCalendar = catchAsync(async (req, res) => {
   const result = await PublicCalendarService.GetCounselorCalendar(
@@ -17,10 +17,10 @@ const GetCounselorCalendar = catchAsync(async (req, res) => {
 });
 
 const GetCounselorDateSlots = catchAsync(async (req, res) => {
-  const type = req.query.type as SessionType;
+  // const type = req.query.type as SessionType;
   const result = await PublicCalendarService.GetCounselorDateSlots(
-    req.params.calenderId,
-    type,
+    req.params.counselorId,
+    req.params.date,
   );
   sendResponse(res, {
     success: true,

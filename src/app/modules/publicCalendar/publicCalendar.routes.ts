@@ -12,6 +12,12 @@ router.get(
 );
 
 router.get(
+  '/:counselorId/slots/:date',
+  // validateRequest(PublicCalendarValidation.getCounselorCalendarSchema),
+  PublicCalendarController.GetCounselorDateSlots,
+);
+
+router.get(
   '/slots/:calenderId',
   validateRequest(PublicCalendarValidation.getCounselorSlotsSchema),
   PublicCalendarController.GetCounselorDateSlots,

@@ -10,5 +10,8 @@ const publicCalendar_controller_1 = __importDefault(require("./publicCalendar.co
 const publicCalendar_validation_1 = __importDefault(require("./publicCalendar.validation"));
 const router = express_1.default.Router();
 router.get('/:counselorId', (0, validateRequest_1.default)(publicCalendar_validation_1.default.getCounselorCalendarSchema), publicCalendar_controller_1.default.GetCounselorCalendar);
+router.get('/:counselorId/slots/:date', 
+// validateRequest(PublicCalendarValidation.getCounselorCalendarSchema),
+publicCalendar_controller_1.default.GetCounselorDateSlots);
 router.get('/slots/:calenderId', (0, validateRequest_1.default)(publicCalendar_validation_1.default.getCounselorSlotsSchema), publicCalendar_controller_1.default.GetCounselorDateSlots);
 exports.PublicCalendarRoutes = router;

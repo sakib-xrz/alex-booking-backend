@@ -1,5 +1,5 @@
 import prisma from '../../utils/prisma';
-import { Prisma, SessionType } from '@prisma/client';
+// import { Prisma, SessionType } from '@prisma/client';
 
 const GetCounselorCalendar = async (counselorId: string) => {
   const calendarDates = await prisma.calendar.findMany({
@@ -46,43 +46,37 @@ const GetCounselorCalendar = async (counselorId: string) => {
   return { calendar };
 };
 
-const GetCounselorDateSlots = async (
-  calendarId: string,
-  type?: SessionType,
-) => {
-  const where: Prisma.TimeSlotWhereInput = {
-    calendar_id: calendarId,
-    status: 'AVAILABLE',
-  };
-
-  if (type) {
-    where.type = type;
-  }
-
+const GetCounselorDateSlots = async (calendarId: string, date: string) => {
   const slots = await prisma.timeSlot.findMany({
-    where,
-    select: {
-      id: true,
-      start_time: true,
-      end_time: true,
-      type: true,
-      status: true,
+    where: {
       calendar: {
-        select: {
-          date: true,
-          counselor: {
-            select: {
-              id: true,
-              name: true,
-              profile_picture: true,
-            },
-          },
-        },
+        date: new Date(date).toISOString(),
+        counselor_id: calendarId,
       },
+      type: 'ONLINE',
     },
-    orderBy: {
-      start_time: 'asc',
-    },
+    // select: {
+    //   id: true,
+    //   start_time: true,
+    //   end_time: true,
+    //   type: true,
+    //   status: true,
+    //   calendar: {
+    //     select: {
+    //       date: true,
+    //       counselor: {
+    //         select: {
+    //           id: true,
+    //           name: true,
+    //           profile_picture: true,
+    //         },
+    //       },
+    //     },
+    //   },
+    // },
+    // orderBy: {
+    //   start_time: 'asc',
+    // },
   });
 
   return { slots };

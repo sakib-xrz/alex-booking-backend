@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../utils/prisma"));
+// import { Prisma, SessionType } from '@prisma/client';
 const GetCounselorCalendar = (counselorId) => __awaiter(void 0, void 0, void 0, function* () {
     const calendarDates = yield prisma_1.default.calendar.findMany({
         where: {
@@ -55,38 +56,37 @@ const GetCounselorCalendar = (counselorId) => __awaiter(void 0, void 0, void 0, 
     }));
     return { calendar };
 });
-const GetCounselorDateSlots = (calendarId, type) => __awaiter(void 0, void 0, void 0, function* () {
-    const where = {
-        calendar_id: calendarId,
-        status: 'AVAILABLE',
-    };
-    if (type) {
-        where.type = type;
-    }
+const GetCounselorDateSlots = (calendarId, date) => __awaiter(void 0, void 0, void 0, function* () {
     const slots = yield prisma_1.default.timeSlot.findMany({
-        where,
-        select: {
-            id: true,
-            start_time: true,
-            end_time: true,
-            type: true,
-            status: true,
+        where: {
             calendar: {
-                select: {
-                    date: true,
-                    counselor: {
-                        select: {
-                            id: true,
-                            name: true,
-                            profile_picture: true,
-                        },
-                    },
-                },
+                date: new Date(date).toISOString(),
+                counselor_id: calendarId,
             },
+            type: 'ONLINE',
         },
-        orderBy: {
-            start_time: 'asc',
-        },
+        // select: {
+        //   id: true,
+        //   start_time: true,
+        //   end_time: true,
+        //   type: true,
+        //   status: true,
+        //   calendar: {
+        //     select: {
+        //       date: true,
+        //       counselor: {
+        //         select: {
+        //           id: true,
+        //           name: true,
+        //           profile_picture: true,
+        //         },
+        //       },
+        //     },
+        //   },
+        // },
+        // orderBy: {
+        //   start_time: 'asc',
+        // },
     });
     return { slots };
 });
