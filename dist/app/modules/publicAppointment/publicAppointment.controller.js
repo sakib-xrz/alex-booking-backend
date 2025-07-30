@@ -18,21 +18,23 @@ const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const publicAppointment_services_1 = __importDefault(require("./publicAppointment.services"));
 const PostAppointment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const data = req.body;
+    // Convert frontend camelCase to backend snake_case format
     const clientData = {
-        name: data.name,
+        first_name: data.firstName,
+        last_name: data.lastName,
         email: data.email,
         phone: data.phone,
-        date_of_birth: data.dateOfBirth,
+        date_of_birth: new Date(data.dateOfBirth),
         gender: data.gender || 'OTHER',
     };
-    const appointmentDate = {
+    const appointmentData = {
         session_type: data.sessionType,
-        date: data.date,
+        date: new Date(data.date),
         time_slot_id: data.timeSlotId,
         notes: data.notes || 'N/A',
         counselor_id: data.counselorId,
     };
-    const result = yield publicAppointment_services_1.default.CreateAppointment(clientData, appointmentDate);
+    const result = yield publicAppointment_services_1.default.CreateAppointment(clientData, appointmentData);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,

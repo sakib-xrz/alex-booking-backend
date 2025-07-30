@@ -5,17 +5,20 @@ import PublicAppointmentService from './publicAppointment.services';
 
 const PostAppointment = catchAsync(async (req, res) => {
   const data = req.body;
+
+  // Convert frontend camelCase to backend snake_case format
   const clientData = {
-    name: data.name,
+    first_name: data.firstName,
+    last_name: data.lastName,
     email: data.email,
     phone: data.phone,
-    date_of_birth: data.dateOfBirth,
+    date_of_birth: new Date(data.dateOfBirth),
     gender: data.gender || 'OTHER',
   };
 
-  const appointmentDate = {
+  const appointmentData = {
     session_type: data.sessionType,
-    date: data.date,
+    date: new Date(data.date),
     time_slot_id: data.timeSlotId,
     notes: data.notes || 'N/A',
     counselor_id: data.counselorId,
@@ -23,8 +26,9 @@ const PostAppointment = catchAsync(async (req, res) => {
 
   const result = await PublicAppointmentService.CreateAppointment(
     clientData,
-    appointmentDate,
+    appointmentData,
   );
+
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,

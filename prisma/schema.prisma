@@ -119,7 +119,8 @@ model TimeSlot {
 
 model Client {
   id            String   @id @default(uuid())
-  name          String
+  first_name    String
+  last_name     String
   email         String   @unique
   phone         String
   date_of_birth DateTime @db.Date

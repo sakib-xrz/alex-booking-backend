@@ -15,6 +15,9 @@ export default {
   frontend_base_url: process.env.FRONTEND_BASE_URL,
   backend_base_url: process.env.BACKEND_BASE_URL,
 
+  stripe_secret_key: process.env.STRIPE_SECRET_KEY,
+  stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+
   digitalocean: {
     spaces_endpoint: process.env.DO_SPACES_ENDPOINT,
     spaces_bucket: process.env.DO_SPACES_BUCKET,
