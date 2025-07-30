@@ -6,6 +6,7 @@ import { ClientRoutes } from '../modules/client/client.routes';
 import { PublicCalendarRoutes } from '../modules/publicCalendar/publicCalendar.routes';
 import { PublicAppointmentRoutes } from '../modules/publicAppointment/publicAppointment.routes';
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
+import { PaymentRoutes } from '../modules/payment/payment.routes';
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ const routes: Route[] = [
   { path: '/public-calenders', route: PublicCalendarRoutes },
   { path: '/public-appointments', route: PublicAppointmentRoutes },
   { path: '/otp', route: OptVerificationRoutes },
+  { path: '/payments', route: PaymentRoutes },
 ];
 
 routes.forEach((route) => {

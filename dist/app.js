@@ -11,7 +11,10 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const notFound_1 = __importDefault(require("./app/middlewares/notFound"));
 const routes_1 = __importDefault(require("./app/routes"));
 const globalErrorHandler_1 = __importDefault(require("./app/middlewares/globalErrorHandler"));
+const payment_controller_1 = require("./app/modules/payment/payment.controller");
 const app = (0, express_1.default)();
+// Stripe webhook - MUST be before express.json() middleware
+app.use('/api/v1/payments/webhook', express_1.default.raw({ type: 'application/json' }), payment_controller_1.PaymentController.handleWebhook);
 app.use((0, morgan_1.default)('dev'));
 app.use(express_1.default.json({ limit: '50mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '50mb' }));

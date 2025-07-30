@@ -6,8 +6,16 @@ import cookieParser from 'cookie-parser';
 import notFound from './app/middlewares/notFound';
 import router from './app/routes';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
+import { PaymentController } from './app/modules/payment/payment.controller';
 
 const app = express();
+
+// Stripe webhook - MUST be before express.json() middleware
+app.use(
+  '/api/v1/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  PaymentController.handleWebhook,
+);
 
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
