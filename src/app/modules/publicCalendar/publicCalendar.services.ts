@@ -56,6 +56,7 @@ const GetCounselorDateSlots = async (
       date: new Date(date).toISOString(),
       counselor_id: calendarId,
     },
+    status: 'AVAILABLE',
   };
 
   if (type) {

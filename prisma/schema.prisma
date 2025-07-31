@@ -152,10 +152,10 @@ model Appointment {
   updated_at   DateTime          @updatedAt
 
   // Relations
-  client    Client    @relation(fields: [client_id], references: [id])
-  counselor User      @relation(fields: [counselor_id], references: [id])
-  time_slot TimeSlot  @relation(fields: [time_slot_id], references: [id])
-  payments  Payment[]
+  client    Client   @relation(fields: [client_id], references: [id])
+  counselor User     @relation(fields: [counselor_id], references: [id])
+  time_slot TimeSlot @relation(fields: [time_slot_id], references: [id])
+  payment   Payment?
 
   @@index([client_id])
   @@index([counselor_id])
@@ -166,7 +166,7 @@ model Appointment {
 
 model Payment {
   id                   String        @id @default(uuid())
-  appointment_id       String
+  appointment_id       String        @unique
   client_id            String
   amount               Decimal       @db.Decimal(10, 2)
   currency             String        @default("AUD") @db.VarChar(3)

@@ -61,6 +61,7 @@ const GetCounselorDateSlots = (calendarId, date, type) => __awaiter(void 0, void
             date: new Date(date).toISOString(),
             counselor_id: calendarId,
         },
+        status: 'AVAILABLE',
     };
     if (type) {
         where.type = type;
