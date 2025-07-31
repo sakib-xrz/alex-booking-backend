@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../utils/prisma"));
-// import { Prisma, SessionType } from '@prisma/client';
 const GetCounselorCalendar = (counselorId) => __awaiter(void 0, void 0, void 0, function* () {
     const calendarDates = yield prisma_1.default.calendar.findMany({
         where: {
@@ -56,15 +55,18 @@ const GetCounselorCalendar = (counselorId) => __awaiter(void 0, void 0, void 0, 
     }));
     return { calendar };
 });
-const GetCounselorDateSlots = (calendarId, date) => __awaiter(void 0, void 0, void 0, function* () {
-    const slots = yield prisma_1.default.timeSlot.findMany({
-        where: {
-            calendar: {
-                date: new Date(date).toISOString(),
-                counselor_id: calendarId,
-            },
-            type: 'ONLINE',
+const GetCounselorDateSlots = (calendarId, date, type) => __awaiter(void 0, void 0, void 0, function* () {
+    const where = {
+        calendar: {
+            date: new Date(date).toISOString(),
+            counselor_id: calendarId,
         },
+    };
+    if (type) {
+        where.type = type;
+    }
+    const slots = yield prisma_1.default.timeSlot.findMany({
+        where,
         // select: {
         //   id: true,
         //   start_time: true,

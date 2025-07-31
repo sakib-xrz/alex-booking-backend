@@ -98,10 +98,6 @@ const handleWebhookEvent = async (event: Stripe.Event): Promise<void> => {
   console.log(`Processing webhook: ${event.type}`);
 
   switch (event.type) {
-    case 'payment_intent.created':
-      await handlePaymentCreated(event.data.object as Stripe.PaymentIntent);
-      break;
-
     case 'payment_intent.succeeded':
       await handlePaymentSuccess(event.data.object as Stripe.PaymentIntent);
       break;
@@ -117,18 +113,6 @@ const handleWebhookEvent = async (event: Stripe.Event): Promise<void> => {
     default:
       console.log(`Unhandled event: ${event.type}`);
   }
-};
-
-const handlePaymentCreated = async (paymentIntent: Stripe.PaymentIntent) => {
-  // Update payment record with payment intent details
-  await prisma.payment.update({
-    where: { transaction_id: paymentIntent.id },
-    data: {
-      payment_gateway_data: paymentIntent as any,
-    },
-  });
-
-  console.log(`Payment intent created: ${paymentIntent.id}`);
 };
 
 const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {

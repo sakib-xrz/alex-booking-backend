@@ -85,9 +85,6 @@ const getPaymentByAppointment = (appointment_id) => __awaiter(void 0, void 0, vo
 const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(`Processing webhook: ${event.type}`);
     switch (event.type) {
-        case 'payment_intent.created':
-            yield handlePaymentCreated(event.data.object);
-            break;
         case 'payment_intent.succeeded':
             yield handlePaymentSuccess(event.data.object);
             break;
@@ -100,16 +97,6 @@ const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function
         default:
             console.log(`Unhandled event: ${event.type}`);
     }
-});
-const handlePaymentCreated = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
-    // Update payment record with payment intent details
-    yield prisma_1.default.payment.update({
-        where: { transaction_id: paymentIntent.id },
-        data: {
-            payment_gateway_data: paymentIntent,
-        },
-    });
-    console.log(`Payment intent created: ${paymentIntent.id}`);
 });
 const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {

@@ -1,5 +1,5 @@
+import { Prisma, SessionType } from '@prisma/client';
 import prisma from '../../utils/prisma';
-// import { Prisma, SessionType } from '@prisma/client';
 
 const GetCounselorCalendar = async (counselorId: string) => {
   const calendarDates = await prisma.calendar.findMany({
@@ -46,15 +46,24 @@ const GetCounselorCalendar = async (counselorId: string) => {
   return { calendar };
 };
 
-const GetCounselorDateSlots = async (calendarId: string, date: string) => {
-  const slots = await prisma.timeSlot.findMany({
-    where: {
-      calendar: {
-        date: new Date(date).toISOString(),
-        counselor_id: calendarId,
-      },
-      type: 'ONLINE',
+const GetCounselorDateSlots = async (
+  calendarId: string,
+  date: string,
+  type: SessionType,
+) => {
+  const where: Prisma.TimeSlotWhereInput = {
+    calendar: {
+      date: new Date(date).toISOString(),
+      counselor_id: calendarId,
     },
+  };
+
+  if (type) {
+    where.type = type;
+  }
+
+  const slots = await prisma.timeSlot.findMany({
+    where,
     // select: {
     //   id: true,
     //   start_time: true,

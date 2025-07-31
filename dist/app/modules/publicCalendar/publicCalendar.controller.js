@@ -16,7 +16,6 @@ const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const publicCalendar_services_1 = __importDefault(require("./publicCalendar.services"));
-// import { SessionType } from '@prisma/client';
 const GetCounselorCalendar = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield publicCalendar_services_1.default.GetCounselorCalendar(req.params.counselorId);
     (0, sendResponse_1.default)(res, {
@@ -27,8 +26,8 @@ const GetCounselorCalendar = (0, catchAsync_1.default)((req, res) => __awaiter(v
     });
 }));
 const GetCounselorDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // const type = req.query.type as SessionType;
-    const result = yield publicCalendar_services_1.default.GetCounselorDateSlots(req.params.counselorId, req.params.date);
+    const type = req.query.type;
+    const result = yield publicCalendar_services_1.default.GetCounselorDateSlots(req.params.counselorId, req.params.date, type);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
