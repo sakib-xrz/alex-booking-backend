@@ -3,6 +3,7 @@ import { AuthRoutes } from '../modules/auth/auth.routes';
 import { UserRoutes } from '../modules/user/user.routes';
 import { CalendarRoutes } from '../modules/calendar/calendar.routes';
 import { ClientRoutes } from '../modules/client/client.routes';
+import { AppointmentRoutes } from '../modules/appointment/appointment.routes';
 import { PublicCalendarRoutes } from '../modules/publicCalendar/publicCalendar.routes';
 import { PublicAppointmentRoutes } from '../modules/publicAppointment/publicAppointment.routes';
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
@@ -17,6 +18,7 @@ const routes: Route[] = [
   { path: '/users', route: UserRoutes },
   { path: '/calendars', route: CalendarRoutes },
   { path: '/clients', route: ClientRoutes },
+  { path: '/appointments', route: AppointmentRoutes },
   { path: '/public-calenders', route: PublicCalendarRoutes },
   { path: '/public-appointments', route: PublicAppointmentRoutes },
   { path: '/otp', route: OptVerificationRoutes },
