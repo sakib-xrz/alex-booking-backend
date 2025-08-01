@@ -9,9 +9,7 @@ const config_1 = __importDefault(require("../../config"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 // Initialize Stripe
-exports.stripe = new stripe_1.default(config_1.default.stripe_secret_key, {
-    apiVersion: '2025-06-30.basil',
-});
+exports.stripe = new stripe_1.default(config_1.default.stripe_secret_key);
 // Convert dollars to cents
 const dollarsToCents = (dollars) => {
     return Math.round(dollars * 100);
