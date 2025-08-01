@@ -10,7 +10,7 @@ import AppError from '../../errors/AppError';
 
 const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
   const user = await prisma.user.findUnique({
-    where: { id },
+    where: { id, is_deleted: false },
   });
 
   if (!user) {
@@ -60,6 +60,33 @@ const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
   return result;
 };
 
+const UpdateUserProfile = async (id: string, data: { name?: string }) => {
+  const user = await prisma.user.findUnique({
+    where: { id, is_deleted: false },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const result = await prisma.user.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      profile_picture: true,
+      role: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+
+  return result;
+};
+
 export const UserService = {
   UpdateProfilePicture,
+  UpdateUserProfile,
 };

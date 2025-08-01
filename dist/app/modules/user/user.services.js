@@ -20,7 +20,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.default.user.findUnique({
-        where: { id },
+        where: { id, is_deleted: false },
     });
     if (!user) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
@@ -58,6 +58,29 @@ const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, fun
     });
     return result;
 });
+const UpdateUserProfile = (id, data) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.findUnique({
+        where: { id, is_deleted: false },
+    });
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
+    }
+    const result = yield prisma_1.default.user.update({
+        where: { id },
+        data,
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            profile_picture: true,
+            role: true,
+            created_at: true,
+            updated_at: true,
+        },
+    });
+    return result;
+});
 exports.UserService = {
     UpdateProfilePicture,
+    UpdateUserProfile,
 };

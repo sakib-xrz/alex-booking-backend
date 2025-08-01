@@ -12,6 +12,39 @@ enum Role {
   COUNSELOR
 }
 
+enum SessionType {
+  ONLINE
+  IN_PERSON
+}
+
+enum SlotStatus {
+  AVAILABLE
+  PROCESSING
+  BOOKED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
 model User {
   id              String   @id @default(uuid())
   name            String
@@ -23,5 +56,150 @@ model User {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
+  // Relations
+  calendars    Calendar[]
+  appointments Appointment[]
+
   @@map("users")
+}
+
+model Calendar {
+  id           String   @id @default(uuid())
+  counselor_id String
+  date         DateTime @db.Date
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  counselor  User       @relation(fields: [counselor_id], references: [id], onDelete: Cascade)
+  time_slots TimeSlot[]
+
+  @@unique([counselor_id, date])
+  @@index([counselor_id])
+  @@index([date])
+  @@map("calendars")
+}
+
+model TimeSlot {
+  id          String      @id @default(uuid())
+  calendar_id String
+  // room_id     String?
+  start_time  String
+  end_time    String
+  type        SessionType
+  status      SlotStatus  @default(AVAILABLE)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  // Relations
+  calendar    Calendar     @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
+  // room        Room?        @relation(fields: [room_id], references: [id])
+  appointment Appointment?
+
+  @@index([calendar_id, start_time, end_time])
+  @@index([status])
+  @@index([type])
+  @@map("time_slots")
+}
+
+// model Room {
+//   id         String   @id @default(uuid())
+//   name       String   @unique
+//   location   String?
+//   capacity   Int?
+//   is_active  Boolean  @default(true)
+//   created_at DateTime @default(now())
+//   updated_at DateTime @updatedAt
+
+//   // Relations
+//   time_slots TimeSlot[]
+
+//   @@map("rooms")
+// }
+
+model Client {
+  id            String   @id @default(uuid())
+  first_name    String
+  last_name     String
+  email         String   @unique
+  phone         String
+  date_of_birth DateTime @db.Date
+  gender        Gender
+  is_verified   Boolean  @default(false)
+  is_deleted    Boolean  @default(false)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  appointments Appointment[]
+  payments     Payment[]
+
+  @@index([email])
+  @@index([phone])
+  @@map("clients")
+}
+
+model Appointment {
+  id           String            @id @default(uuid())
+  client_id    String
+  counselor_id String
+  time_slot_id String            @unique
+  session_type SessionType
+  date         DateTime          @db.Date
+  notes        String?
+  status       AppointmentStatus @default(PENDING)
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+
+  // Relations
+  client    Client   @relation(fields: [client_id], references: [id])
+  counselor User     @relation(fields: [counselor_id], references: [id])
+  time_slot TimeSlot @relation(fields: [time_slot_id], references: [id])
+  payment   Payment?
+
+  @@index([client_id])
+  @@index([counselor_id])
+  @@index([date])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Payment {
+  id                   String        @id @default(uuid())
+  appointment_id       String        @unique
+  client_id            String
+  amount               Decimal       @db.Decimal(10, 2)
+  currency             String        @default("AUD") @db.VarChar(3)
+  status               PaymentStatus @default(PENDING)
+  payment_method       String?
+  transaction_id       String?       @unique
+  payment_gateway_data Json?
+  refund_amount        Decimal?      @db.Decimal(10, 2)
+  refund_reason        String?
+  processed_at         DateTime?
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+
+  // Relations
+  appointment Appointment @relation(fields: [appointment_id], references: [id])
+  client      Client      @relation(fields: [client_id], references: [id])
+
+  @@index([appointment_id])
+  @@index([client_id])
+  @@index([status])
+  @@index([transaction_id])
+  @@map("payments")
+}
+
+model EmailOTPVerification {
+  id          String   @id @default(uuid())
+  email       String   @db.VarChar(255)
+  otp         String   @db.VarChar(6)
+  expires_at  DateTime
+  is_verified Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  @@index([email])
+  @@index([otp])
+  @@map("email_otp_verifications")
 }
