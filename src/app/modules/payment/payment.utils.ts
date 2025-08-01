@@ -4,9 +4,7 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 
 // Initialize Stripe
-export const stripe = new Stripe(config.stripe_secret_key!, {
-  apiVersion: '2025-06-30.basil',
-});
+export const stripe = new Stripe(config.stripe_secret_key!);
 
 // Convert dollars to cents
 export const dollarsToCents = (dollars: number): number => {
