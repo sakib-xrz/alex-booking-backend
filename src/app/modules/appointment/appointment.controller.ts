@@ -5,7 +5,7 @@ import AppointmentService from './appointment.services';
 
 const GetCounselorAppointments = catchAsync(async (req, res) => {
   const result = await AppointmentService.GetCounselorAppointmentsById(
-    req.params.id,
+    req.user.id,
   );
 
   sendResponse(res, {
@@ -15,6 +15,23 @@ const GetCounselorAppointments = catchAsync(async (req, res) => {
     data: result,
   });
 });
-const AppointmentController = { GetCounselorAppointments };
+
+const GetCounselorAppointmentDetailsById = catchAsync(async (req, res) => {
+  const result = await AppointmentService.GetCounselorAppointmentDetailsById(
+    req.params.appointmentId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Appointment details retrieved successfully',
+    data: result,
+  });
+});
+
+const AppointmentController = {
+  GetCounselorAppointments,
+  GetCounselorAppointmentDetailsById,
+};
 
 export default AppointmentController;

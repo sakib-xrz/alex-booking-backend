@@ -1,6 +1,7 @@
 import { Server } from 'http';
 import app from './app';
 import config from './app/config';
+import { scheduledAutoCancelPendingJobs } from './app/modules/appointment/jobs/autoCancelPendingAppointments';
 
 process.on('uncaughtException', (err) => {
   console.error(err);
@@ -25,6 +26,8 @@ async function startServer() {
     }
   });
 }
+
+scheduledAutoCancelPendingJobs();
 
 startServer();
 

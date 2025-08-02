@@ -23,8 +23,6 @@ const CreateAppointment = async (
   clientData: IClientData,
   appointmentData: IAppointmentData,
 ) => {
-  console.log(clientData, appointmentData);
-
   // Check expected slot is available
   const expectedSlot = await prisma.timeSlot.findFirst({
     where: {

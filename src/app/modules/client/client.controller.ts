@@ -4,7 +4,7 @@ import sendResponse from '../../utils/sendResponse';
 import ClientService from './client.services';
 
 const GetCounselorClients = catchAsync(async (req, res) => {
-  const result = await ClientService.GetCounselorClientsById(req.params.id);
+  const result = await ClientService.GetCounselorClientsById(req.user.id);
 
   sendResponse(res, {
     success: true,

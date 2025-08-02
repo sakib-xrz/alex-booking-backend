@@ -21,7 +21,13 @@ const GetCounselorClientsById = async (counselor_id: string) => {
       created_at: true,
       _count: {
         select: {
-          appointments: true,
+          appointments: {
+            where: {
+              status: {
+                not: 'PENDING',
+              },
+            },
+          },
         },
       },
     },
