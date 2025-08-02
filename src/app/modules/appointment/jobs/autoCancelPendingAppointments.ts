@@ -1,4 +1,4 @@
-import { format, subMinutes } from 'date-fns';
+import { subMinutes } from 'date-fns';
 
 import cron from 'node-cron';
 import prisma from '../../../utils/prisma';
