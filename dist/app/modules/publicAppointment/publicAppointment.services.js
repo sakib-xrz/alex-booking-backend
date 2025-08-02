@@ -16,7 +16,6 @@ const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(clientData, appointmentData);
     // Check expected slot is available
     const expectedSlot = yield prisma_1.default.timeSlot.findFirst({
         where: {

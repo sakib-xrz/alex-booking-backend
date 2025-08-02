@@ -8,6 +8,7 @@ const auth_routes_1 = require("../modules/auth/auth.routes");
 const user_routes_1 = require("../modules/user/user.routes");
 const calendar_routes_1 = require("../modules/calendar/calendar.routes");
 const client_routes_1 = require("../modules/client/client.routes");
+const appointment_routes_1 = require("../modules/appointment/appointment.routes");
 const publicCalendar_routes_1 = require("../modules/publicCalendar/publicCalendar.routes");
 const publicAppointment_routes_1 = require("../modules/publicAppointment/publicAppointment.routes");
 const optVerification_routes_1 = require("../modules/optVerification/optVerification.routes");
@@ -18,6 +19,7 @@ const routes = [
     { path: '/users', route: user_routes_1.UserRoutes },
     { path: '/calendars', route: calendar_routes_1.CalendarRoutes },
     { path: '/clients', route: client_routes_1.ClientRoutes },
+    { path: '/appointments', route: appointment_routes_1.AppointmentRoutes },
     { path: '/public-calenders', route: publicCalendar_routes_1.PublicCalendarRoutes },
     { path: '/public-appointments', route: publicAppointment_routes_1.PublicAppointmentRoutes },
     { path: '/otp', route: optVerification_routes_1.OptVerificationRoutes },

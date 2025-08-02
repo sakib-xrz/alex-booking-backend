@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./app/config"));
+const autoCancelPendingAppointments_1 = require("./app/modules/appointment/jobs/autoCancelPendingAppointments");
 process.on('uncaughtException', (err) => {
     console.error(err);
     process.exit(1);
@@ -37,6 +38,7 @@ function startServer() {
         });
     });
 }
+(0, autoCancelPendingAppointments_1.scheduledAutoCancelPendingJobs)();
 startServer();
 process.on('SIGTERM', () => {
     if (server) {
