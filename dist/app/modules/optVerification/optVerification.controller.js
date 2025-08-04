@@ -22,7 +22,7 @@ const PostOtp = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.CREATED,
-        message: 'OPT Created Successfully',
+        message: 'OTP sent successfully',
         data: result,
     });
 }));
@@ -32,7 +32,7 @@ const VerifyOtp = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'OTP Verified Successfully',
+        message: 'OTP verified successfully',
         data: result,
     });
 }));

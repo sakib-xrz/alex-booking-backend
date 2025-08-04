@@ -16,67 +16,79 @@ const date_fns_1 = require("date-fns");
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
+const mailer_1 = __importDefault(require("../../utils/mailer"));
+const optVerification_utils_1 = __importDefault(require("./optVerification.utils"));
+const optVerification_constant_1 = require("./optVerification.constant");
 const CreateOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email }) {
-    let result;
-    const isExistingEmail = yield prisma_1.default.emailOTPVerification.findFirst({
+    // Check if there's an existing OTP record for this email
+    const existingOTPRecord = yield prisma_1.default.emailOTPVerification.findFirst({
         where: {
             email,
         },
+        orderBy: {
+            created_at: 'desc',
+        },
     });
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires_at = (0, date_fns_1.addMinutes)(new Date(), 5);
-    if (isExistingEmail && isExistingEmail.is_verified) {
-        result = {
-            email: isExistingEmail.email,
-            isVerified: isExistingEmail.is_verified,
-        };
+    // Check rate limiting: don't allow new OTP request within 120 seconds of last one
+    if (existingOTPRecord) {
+        const secondsSinceLastOTP = (0, date_fns_1.differenceInSeconds)(new Date(), existingOTPRecord.created_at);
+        if (secondsSinceLastOTP < optVerification_constant_1.OTP_RATE_LIMIT_SECONDS) {
+            const remainingTime = optVerification_constant_1.OTP_RATE_LIMIT_SECONDS - secondsSinceLastOTP;
+            throw new AppError_1.default(http_status_1.default.TOO_MANY_REQUESTS, `Please wait ${remainingTime} seconds before requesting a new OTP`);
+        }
     }
-    else if (isExistingEmail && !isExistingEmail.is_verified) {
-        const updatedOtp = yield prisma_1.default.emailOTPVerification.update({
-            where: {
-                id: isExistingEmail.id,
-            },
-            data: {
-                otp,
-                expires_at,
-            },
+    // Generate new OTP and set expiry time
+    const otp = optVerification_utils_1.default.generateOTP();
+    const expires_at = (0, date_fns_1.addMinutes)(new Date(), optVerification_constant_1.OTP_EXPIRY_MINUTES);
+    const result = yield prisma_1.default.emailOTPVerification.create({
+        data: {
+            email,
+            otp,
+            expires_at,
+        },
+    });
+    // Send OTP via email
+    try {
+        const emailTemplate = optVerification_utils_1.default.createOTPEmailTemplate(otp);
+        yield (0, mailer_1.default)(email, 'Email Verification - Your OTP Code', emailTemplate);
+    }
+    catch (error) {
+        console.log(error);
+        // If email sending fails, delete the OTP record and throw error
+        yield prisma_1.default.emailOTPVerification.delete({
+            where: { id: result.id },
         });
-        result = {
-            email: updatedOtp.email,
-            otp: updatedOtp.otp,
-            expiresAt: updatedOtp.expires_at,
-            isVerified: updatedOtp.is_verified,
-        };
+        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to send OTP email. Please try again.');
     }
-    else {
-        result = yield prisma_1.default.emailOTPVerification.create({
-            data: {
-                email,
-                otp,
-                expires_at,
-            },
-        });
-    }
-    // TODO: NEED TO IMPLEMENT EMAIL SENDING FUNCTIONALITY @Sakib Vai
-    return result;
+    // Return success response without exposing the OTP
+    return {
+        email: result.email,
+        expires_at: result.expires_at,
+        is_verified: result.is_verified,
+    };
 });
 const VerifyOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email, otp }) {
+    // Convert string OTP to number for database comparison
+    const otpNumber = parseInt(otp, 10);
     const isVerifiedEmail = yield prisma_1.default.emailOTPVerification.findFirst({
         where: {
             email,
-            otp,
+            otp: otpNumber,
             expires_at: { gt: new Date() },
             is_verified: false,
         },
     });
     if (!isVerifiedEmail) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Email or OTP is incorrect');
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid OTP or OTP has expired');
     }
     const result = yield prisma_1.default.emailOTPVerification.update({
         where: { id: isVerifiedEmail.id },
         data: { is_verified: true },
     });
-    return result;
+    return {
+        email: result.email,
+        is_verified: result.is_verified,
+    };
 });
 const OptVerificationService = { VerifyOpt, CreateOpt };
 exports.default = OptVerificationService;

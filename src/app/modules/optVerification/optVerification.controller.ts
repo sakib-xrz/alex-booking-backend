@@ -10,7 +10,7 @@ const PostOtp = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.CREATED,
-    message: 'OPT Created Successfully',
+    message: 'OTP sent successfully',
     data: result,
   });
 });
@@ -22,7 +22,7 @@ const VerifyOtp = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: 'OTP Verified Successfully',
+    message: 'OTP verified successfully',
     data: result,
   });
 });
