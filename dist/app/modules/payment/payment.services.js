@@ -139,7 +139,7 @@ const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function
     }
 });
 const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
-    let appointmentId;
+    let appointmentId = '';
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         // Find the payment record by transaction_id
         const existingPayment = yield tx.payment.findUnique({
@@ -275,9 +275,26 @@ const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, v
             throw new Error('Appointment not found');
         }
         // Parse time slot times and create DateTime objects
-        const appointmentDate = appointment.date;
-        const startTime = (0, date_fns_1.parse)(appointment.time_slot.start_time, 'HH:mm', appointmentDate);
-        const endTime = (0, date_fns_1.parse)(appointment.time_slot.end_time, 'HH:mm', appointmentDate);
+        const appointmentDate = new Date(appointment.date);
+        // Ensure we have a valid date by setting it to the beginning of the day
+        appointmentDate.setHours(0, 0, 0, 0);
+        const startTime = (0, date_fns_1.parse)(appointment.time_slot.start_time, 'h:mm a', appointmentDate);
+        const endTime = (0, date_fns_1.parse)(appointment.time_slot.end_time, 'h:mm a', appointmentDate);
+        // Debug logging
+        console.log('Date parsing debug:', {
+            originalDate: appointment.date,
+            appointmentDate: appointmentDate,
+            startTimeString: appointment.time_slot.start_time,
+            endTimeString: appointment.time_slot.end_time,
+            parsedStartTime: startTime,
+            parsedEndTime: endTime,
+            isStartTimeValid: !isNaN(startTime.getTime()),
+            isEndTimeValid: !isNaN(endTime.getTime()),
+        });
+        // Validate dates before proceeding
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+            throw new Error(`Invalid date parsing: startTime=${startTime}, endTime=${endTime}, originalDate=${appointment.date}`);
+        }
         // Create Google Calendar event
         const calendarResult = yield googleCalendar_services_1.default.createCalendarEvent({
             appointmentId: appointment.id,

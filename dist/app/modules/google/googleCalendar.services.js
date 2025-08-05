@@ -20,6 +20,14 @@ const date_fns_1 = require("date-fns");
 // Create Google Calendar event with Google Meet
 const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
+    console.log('Creating Google Calendar event for appointment:', data);
+    // Validate dates before proceeding
+    if (!data.startDateTime ||
+        !data.endDateTime ||
+        isNaN(data.startDateTime.getTime()) ||
+        isNaN(data.endDateTime.getTime())) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Invalid date values: startDateTime=${data.startDateTime}, endDateTime=${data.endDateTime}`);
+    }
     try {
         // Get appointment details
         const appointment = yield prisma_1.default.appointment.findUnique({
@@ -47,10 +55,19 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
         const calendar = yield google_services_1.default.getCalendarClient(data.counselorId);
         // Create event details
         const eventTitle = `Counseling Session - ${data.clientName}`;
+        let formattedDate, formattedStartTime, formattedEndTime;
+        try {
+            formattedDate = (0, date_fns_1.format)(data.startDateTime, 'PPPP');
+            formattedStartTime = (0, date_fns_1.format)(data.startDateTime, 'p');
+            formattedEndTime = (0, date_fns_1.format)(data.endDateTime, 'p');
+        }
+        catch (error) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Failed to format dates: ${error instanceof Error ? error.message : String(error)}`);
+        }
         const eventDescription = `
 Counseling session with ${data.clientName}
-Date: ${(0, date_fns_1.format)(data.startDateTime, 'PPPP')}
-Time: ${(0, date_fns_1.format)(data.startDateTime, 'p')} - ${(0, date_fns_1.format)(data.endDateTime, 'p')}
+Date: ${formattedDate}
+Time: ${formattedStartTime} - ${formattedEndTime}
 Session Type: ${appointment.session_type}
 ${appointment.notes ? `Notes: ${appointment.notes}` : ''}
 
@@ -72,11 +89,13 @@ Appointment ID: ${data.appointmentId}
                     email: appointment.counselor.email,
                     displayName: appointment.counselor.name,
                     responseStatus: 'accepted',
+                    organizer: true,
                 },
                 {
                     email: data.clientEmail,
                     displayName: data.clientName,
                     responseStatus: 'needsAction',
+                    optional: false,
                 },
             ],
             conferenceData: {
@@ -93,15 +112,19 @@ Appointment ID: ${data.appointmentId}
                     { method: 'popup', minutes: 15 }, // 15 minutes before
                 ],
             },
-            visibility: 'private',
+            guestsCanSeeOtherGuests: true,
+            guestsCanInviteOthers: false,
+            guestsCanModify: false,
+            visibility: 'public',
             status: 'confirmed',
         };
         // Create the event
         const response = yield calendar.events.insert({
             calendarId: 'primary',
-            resource: event,
+            requestBody: event,
             conferenceDataVersion: 1,
             sendUpdates: 'all', // Send email invitations to all attendees
+            sendNotifications: true, // Ensure notifications are sent
         });
         const createdEvent = response.data;
         const meetingLink = createdEvent.hangoutLink ||
@@ -120,6 +143,30 @@ Appointment ID: ${data.appointmentId}
         console.log(`Google Calendar event created successfully for appointment ${data.appointmentId}`);
         console.log(`Event ID: ${createdEvent.id}`);
         console.log(`Meeting Link: ${meetingLink}`);
+        console.log(`Event HTML Link: ${createdEvent.htmlLink}`);
+        console.log(`Event attendees:`, createdEvent.attendees);
+        // Verify the event was created correctly by fetching it back
+        try {
+            const verifyEvent = yield calendar.events.get({
+                calendarId: 'primary',
+                eventId: createdEvent.id,
+            });
+            console.log(`Event verification - Status: ${verifyEvent.data.status}, Visibility: ${verifyEvent.data.visibility}`);
+            // Sometimes updating the event immediately after creation helps with visibility
+            // This is a workaround for Google Calendar API quirks
+            yield calendar.events.patch({
+                calendarId: 'primary',
+                eventId: createdEvent.id,
+                requestBody: {
+                    attendees: event.attendees,
+                },
+                sendUpdates: 'all',
+            });
+            console.log('Event attendees updated to ensure visibility');
+        }
+        catch (verifyError) {
+            console.warn('Failed to verify/update created event:', verifyError);
+        }
         return {
             eventId: createdEvent.id,
             meetingLink: meetingLink,
@@ -149,7 +196,7 @@ const updateCalendarEvent = (eventId, counselorId, updates) => __awaiter(void 0,
         const response = yield calendar.events.patch({
             calendarId: 'primary',
             eventId: eventId,
-            resource: updates,
+            requestBody: updates,
             sendUpdates: 'all',
         });
         return response.data;
