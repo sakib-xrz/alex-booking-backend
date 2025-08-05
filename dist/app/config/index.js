@@ -23,4 +23,8 @@ exports.default = {
         spaces_secret_key: process.env.DO_SPACES_SECRET_KEY,
         spaces_region: process.env.DO_SPACES_REGION,
     },
+    emailSender: {
+        email: process.env.EMAIL_SENDER,
+        app_pass: process.env.EMAIL_SENDER_PASS,
+    },
 };
