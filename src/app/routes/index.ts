@@ -8,6 +8,7 @@ import { PublicCalendarRoutes } from '../modules/publicCalendar/publicCalendar.r
 import { PublicAppointmentRoutes } from '../modules/publicAppointment/publicAppointment.routes';
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
+import { GoogleRoutes } from '../modules/google/google.routes';
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ const routes: Route[] = [
   { path: '/public-appointments', route: PublicAppointmentRoutes },
   { path: '/otp', route: OptVerificationRoutes },
   { path: '/payments', route: PaymentRoutes },
+  { path: '/google', route: GoogleRoutes },
 ];
 
 routes.forEach((route) => {

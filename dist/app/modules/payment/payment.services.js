@@ -17,6 +17,8 @@ const prisma_1 = __importDefault(require("../../utils/prisma"));
 const payment_utils_1 = require("./payment.utils");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
+const googleCalendar_services_1 = __importDefault(require("../google/googleCalendar.services"));
+const date_fns_1 = require("date-fns");
 // Create payment intent - Stripe handles everything after this
 const createPaymentIntent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     // Get appointment details
@@ -137,6 +139,7 @@ const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function
     }
 });
 const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
+    let appointmentId;
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         // Find the payment record by transaction_id
         const existingPayment = yield tx.payment.findUnique({
@@ -146,6 +149,7 @@ const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0
             console.error(`Payment record not found for transaction: ${paymentIntent.id}`);
             throw new Error(`Payment record not found for transaction: ${paymentIntent.id}`);
         }
+        appointmentId = existingPayment.appointment_id;
         // Update payment status
         const payment = yield tx.payment.update({
             where: { transaction_id: paymentIntent.id },
@@ -173,6 +177,15 @@ const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0
         });
     }));
     console.log(`Payment successful: ${paymentIntent.id}`);
+    // Create Google Calendar event after successful transaction
+    try {
+        yield createGoogleCalendarEvent(appointmentId);
+    }
+    catch (error) {
+        console.error('Error creating Google Calendar event:', error);
+        // Don't fail the payment process if calendar creation fails
+        // The appointment is still confirmed, but without calendar integration
+    }
 });
 const handlePaymentFailed = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
@@ -241,6 +254,50 @@ const handlePaymentCanceled = (paymentIntent) => __awaiter(void 0, void 0, void 
         }
     }));
     console.log(`Payment canceled: ${paymentIntent.id}`);
+});
+// Helper function to create Google Calendar event
+const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Get full appointment details
+        const appointment = yield prisma_1.default.appointment.findUnique({
+            where: { id: appointmentId },
+            include: {
+                client: true,
+                counselor: true,
+                time_slot: {
+                    include: {
+                        calendar: true,
+                    },
+                },
+            },
+        });
+        if (!appointment) {
+            throw new Error('Appointment not found');
+        }
+        // Parse time slot times and create DateTime objects
+        const appointmentDate = appointment.date;
+        const startTime = (0, date_fns_1.parse)(appointment.time_slot.start_time, 'HH:mm', appointmentDate);
+        const endTime = (0, date_fns_1.parse)(appointment.time_slot.end_time, 'HH:mm', appointmentDate);
+        // Create Google Calendar event
+        const calendarResult = yield googleCalendar_services_1.default.createCalendarEvent({
+            appointmentId: appointment.id,
+            counselorId: appointment.counselor_id,
+            clientEmail: appointment.client.email,
+            clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
+            startDateTime: startTime,
+            endDateTime: endTime,
+            timeZone: 'Australia/Sydney', // Adjust based on your timezone
+        });
+        if (calendarResult) {
+            console.log(`Google Calendar event created for appointment ${appointmentId}`);
+            console.log(`Meeting link: ${calendarResult.meetingLink}`);
+        }
+        return calendarResult;
+    }
+    catch (error) {
+        console.error(`Failed to create Google Calendar event for appointment ${appointmentId}:`, error);
+        throw error;
+    }
 });
 exports.PaymentService = {
     createPaymentIntent,

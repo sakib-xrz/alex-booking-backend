@@ -13,6 +13,7 @@ const publicCalendar_routes_1 = require("../modules/publicCalendar/publicCalenda
 const publicAppointment_routes_1 = require("../modules/publicAppointment/publicAppointment.routes");
 const optVerification_routes_1 = require("../modules/optVerification/optVerification.routes");
 const payment_routes_1 = require("../modules/payment/payment.routes");
+const google_routes_1 = require("../modules/google/google.routes");
 const router = express_1.default.Router();
 const routes = [
     { path: '/auth', route: auth_routes_1.AuthRoutes },
@@ -24,6 +25,7 @@ const routes = [
     { path: '/public-appointments', route: publicAppointment_routes_1.PublicAppointmentRoutes },
     { path: '/otp', route: optVerification_routes_1.OptVerificationRoutes },
     { path: '/payments', route: payment_routes_1.PaymentRoutes },
+    { path: '/google', route: google_routes_1.GoogleRoutes },
 ];
 routes.forEach((route) => {
     router.use(route.path, route.route);

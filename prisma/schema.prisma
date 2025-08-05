@@ -47,16 +47,25 @@ enum PaymentStatus {
   DELETED
 }
 
+enum MeetingPlatform {
+  GOOGLE_MEET
+  ZOOM
+}
+
 model User {
-  id              String   @id @default(uuid())
-  name            String
-  email           String   @unique
-  password        String
-  role            Role     @default(COUNSELOR)
-  profile_picture String?
-  is_deleted      Boolean  @default(false)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id                    String    @id @default(uuid())
+  name                  String
+  email                 String    @unique
+  password              String
+  role                  Role      @default(COUNSELOR)
+  profile_picture       String?
+  google_access_token   String?
+  google_refresh_token  String?
+  google_token_expiry   DateTime?
+  is_calendar_connected Boolean   @default(false)
+  is_deleted            Boolean   @default(false)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
 
   // Relations
   calendars    Calendar[]
@@ -158,12 +167,26 @@ model Appointment {
   counselor User     @relation(fields: [counselor_id], references: [id])
   time_slot TimeSlot @relation(fields: [time_slot_id], references: [id])
   payment   Payment?
+  meeting   Meeting?
 
   @@index([client_id])
   @@index([counselor_id])
   @@index([date])
   @@index([status])
   @@map("appointments")
+}
+
+model Meeting {
+  id             String          @id @default(uuid())
+  appointment_id String          @unique
+  platform       MeetingPlatform @default(GOOGLE_MEET)
+  link           String
+  created_at     DateTime        @default(now())
+
+  // Relations
+  appointment Appointment @relation(fields: [appointment_id], references: [id])
+
+  @@map("meetings")
 }
 
 model Payment {

@@ -4,6 +4,8 @@ import { stripe, dollarsToCents } from './payment.utils';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
+import GoogleCalendarService from '../google/googleCalendar.services';
+import { parse } from 'date-fns';
 
 interface CreatePaymentIntentData {
   appointment_id: string;
@@ -156,6 +158,8 @@ const handleWebhookEvent = async (event: Stripe.Event): Promise<void> => {
 };
 
 const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {
+  let appointmentId: string = '';
+
   await prisma.$transaction(async (tx) => {
     // Find the payment record by transaction_id
     const existingPayment = await tx.payment.findUnique({
@@ -170,6 +174,8 @@ const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {
         `Payment record not found for transaction: ${paymentIntent.id}`,
       );
     }
+
+    appointmentId = existingPayment.appointment_id;
 
     // Update payment status
     const payment = await tx.payment.update({
@@ -202,6 +208,15 @@ const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {
   });
 
   console.log(`Payment successful: ${paymentIntent.id}`);
+
+  // Create Google Calendar event after successful transaction
+  try {
+    await createGoogleCalendarEvent(appointmentId);
+  } catch (error) {
+    console.error('Error creating Google Calendar event:', error);
+    // Don't fail the payment process if calendar creation fails
+    // The appointment is still confirmed, but without calendar integration
+  }
 };
 
 const handlePaymentFailed = async (paymentIntent: Stripe.PaymentIntent) => {
@@ -286,6 +301,68 @@ const handlePaymentCanceled = async (paymentIntent: Stripe.PaymentIntent) => {
   });
 
   console.log(`Payment canceled: ${paymentIntent.id}`);
+};
+
+// Helper function to create Google Calendar event
+const createGoogleCalendarEvent = async (appointmentId: string) => {
+  try {
+    // Get full appointment details
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        client: true,
+        counselor: true,
+        time_slot: {
+          include: {
+            calendar: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new Error('Appointment not found');
+    }
+
+    // Parse time slot times and create DateTime objects
+    const appointmentDate = appointment.date;
+    const startTime = parse(
+      appointment.time_slot.start_time,
+      'HH:mm',
+      appointmentDate,
+    );
+    const endTime = parse(
+      appointment.time_slot.end_time,
+      'HH:mm',
+      appointmentDate,
+    );
+
+    // Create Google Calendar event
+    const calendarResult = await GoogleCalendarService.createCalendarEvent({
+      appointmentId: appointment.id,
+      counselorId: appointment.counselor_id,
+      clientEmail: appointment.client.email,
+      clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
+      startDateTime: startTime,
+      endDateTime: endTime,
+      timeZone: 'Australia/Sydney', // Adjust based on your timezone
+    });
+
+    if (calendarResult) {
+      console.log(
+        `Google Calendar event created for appointment ${appointmentId}`,
+      );
+      console.log(`Meeting link: ${calendarResult.meetingLink}`);
+    }
+
+    return calendarResult;
+  } catch (error) {
+    console.error(
+      `Failed to create Google Calendar event for appointment ${appointmentId}:`,
+      error,
+    );
+    throw error;
+  }
 };
 
 export const PaymentService = {
