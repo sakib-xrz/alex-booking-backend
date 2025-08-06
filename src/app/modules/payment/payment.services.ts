@@ -324,8 +324,9 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
       throw new Error('Appointment not found');
     }
 
-    // Parse time slot times and create DateTime objects
-    const appointmentDate = new Date(appointment.date);
+    console.log('Appointment before parsing:', appointment);
+
+    const appointmentDate = appointment.date;
     // Ensure we have a valid date by setting it to the beginning of the day
     appointmentDate.setHours(0, 0, 0, 0);
 

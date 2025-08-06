@@ -28,6 +28,7 @@ const GetCalenders = async (counselorId: string) => {
 };
 
 const CreateCalenderDate = async (counselorId: string, date: string | Date) => {
+  console.log('Date from line 31:', typeof date);
   const createdCalenderDate = await prisma.calendar.create({
     data: {
       counselor_id: counselorId,

@@ -58,7 +58,7 @@ const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, voi
                     first_name: clientData.first_name,
                     last_name: clientData.last_name,
                     phone: clientData.phone,
-                    date_of_birth: clientData.date_of_birth,
+                    date_of_birth: new Date(clientData.date_of_birth).toISOString(),
                     gender: clientData.gender,
                 },
             });
@@ -66,7 +66,14 @@ const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, voi
         else {
             // 2. Create new client
             const newClient = yield transaction.client.create({
-                data: clientData,
+                data: {
+                    first_name: clientData.first_name,
+                    last_name: clientData.last_name,
+                    email: clientData.email,
+                    phone: clientData.phone,
+                    date_of_birth: new Date(clientData.date_of_birth).toISOString(),
+                    gender: clientData.gender,
+                },
             });
             client_id = newClient.id;
         }
@@ -75,13 +82,14 @@ const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, voi
             where: { id: expectedSlot.id },
             data: { status: 'PROCESSING' },
         });
+        console.log('Appointment data from line 102:', appointmentData);
         // 4. Create Appointment with PENDING status
         const newAppointment = yield transaction.appointment.create({
             data: {
                 client_id,
                 time_slot_id: expectedSlot.id,
                 counselor_id: appointmentData.counselor_id,
-                date: appointmentData.date,
+                date: new Date(appointmentData.date).toISOString(),
                 session_type: appointmentData.session_type,
                 notes: appointmentData.notes,
                 status: 'PENDING',
@@ -98,6 +106,7 @@ const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, voi
                 time_slot: true,
             },
         });
+        console.log('Appointment created data from line 128:', newAppointment);
         return newAppointment;
     }));
     // Return appointment with payment required status

@@ -38,6 +38,7 @@ const GetCalenders = (counselorId) => __awaiter(void 0, void 0, void 0, function
     return { calender };
 });
 const CreateCalenderDate = (counselorId, date) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Date from line 31:', typeof date);
     const createdCalenderDate = yield prisma_1.default.calendar.create({
         data: {
             counselor_id: counselorId,

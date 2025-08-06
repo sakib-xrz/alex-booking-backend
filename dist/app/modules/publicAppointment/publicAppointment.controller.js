@@ -24,12 +24,12 @@ const PostAppointment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         last_name: data.lastName,
         email: data.email,
         phone: data.phone,
-        date_of_birth: new Date(data.dateOfBirth),
+        date_of_birth: data.dateOfBirth,
         gender: data.gender || 'OTHER',
     };
     const appointmentData = {
         session_type: data.sessionType,
-        date: new Date(data.date),
+        date: data.date,
         time_slot_id: data.timeSlotId,
         notes: data.notes || 'N/A',
         counselor_id: data.counselorId,

@@ -84,12 +84,15 @@ const GetCounselorDateSlots = async (
     //     },
     //   },
     // },
-    // orderBy: {
-    //   start_time: 'asc',
-    // },
   });
 
-  return { slots };
+  const sortedSlots = slots.sort((a, b) => {
+    const aTime = new Date(`1970-01-01T${a.start_time}`);
+    const bTime = new Date(`1970-01-01T${b.start_time}`);
+    return aTime.getTime() - bTime.getTime();
+  });
+
+  return { slots: sortedSlots };
 };
 
 const PublicCalendarService = {

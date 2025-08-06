@@ -163,9 +163,9 @@ model Appointment {
   updated_at   DateTime          @updatedAt
 
   // Relations
-  client    Client   @relation(fields: [client_id], references: [id])
-  counselor User     @relation(fields: [counselor_id], references: [id])
-  time_slot TimeSlot @relation(fields: [time_slot_id], references: [id])
+  client    Client   @relation(fields: [client_id], references: [id], onDelete: Restrict)
+  counselor User     @relation(fields: [counselor_id], references: [id], onDelete: Restrict)
+  time_slot TimeSlot @relation(fields: [time_slot_id], references: [id], onDelete: Cascade)
   payment   Payment?
   meeting   Meeting?
 
@@ -184,7 +184,7 @@ model Meeting {
   created_at     DateTime        @default(now())
 
   // Relations
-  appointment Appointment @relation(fields: [appointment_id], references: [id])
+  appointment Appointment @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
 
   @@map("meetings")
 }
@@ -206,8 +206,8 @@ model Payment {
   updated_at           DateTime      @updatedAt
 
   // Relations
-  appointment Appointment @relation(fields: [appointment_id], references: [id])
-  client      Client      @relation(fields: [client_id], references: [id])
+  appointment Appointment @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
+  client      Client      @relation(fields: [client_id], references: [id], onDelete: Restrict)
 
   @@index([appointment_id])
   @@index([client_id])
