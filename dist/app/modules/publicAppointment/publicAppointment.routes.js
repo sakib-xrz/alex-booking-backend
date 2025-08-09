@@ -10,4 +10,5 @@ const validateRequest_1 = __importDefault(require("../../middlewares/validateReq
 const publicAppointment_validation_1 = __importDefault(require("./publicAppointment.validation"));
 const router = express_1.default.Router();
 router.post('/', (0, validateRequest_1.default)(publicAppointment_validation_1.default.createPublicAppointmentZodSchema), publicAppointment_controller_1.default.PostAppointment);
+router.get('/:id', publicAppointment_controller_1.default.getAppointment);
 exports.PublicAppointmentRoutes = router;

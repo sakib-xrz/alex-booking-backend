@@ -42,5 +42,15 @@ const PostAppointment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
-const PublicAppointmentController = { PostAppointment };
+const getAppointment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const result = yield publicAppointment_services_1.default.getAppointment(id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Appointment fetched successfully',
+        data: result,
+    });
+}));
+const PublicAppointmentController = { PostAppointment, getAppointment };
 exports.default = PublicAppointmentController;

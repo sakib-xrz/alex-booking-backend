@@ -112,5 +112,20 @@ const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, voi
     // Return appointment with payment required status
     return Object.assign(Object.assign({}, appointment), { requires_payment: true });
 });
-const PublicAppointmentService = { CreateAppointment };
+const getAppointment = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const appointment = yield prisma_1.default.appointment.findUnique({
+        where: { id },
+        include: {
+            client: true,
+            counselor: true,
+            time_slot: true,
+            payment: true,
+        },
+    });
+    if (!appointment) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+    }
+    return appointment;
+});
+const PublicAppointmentService = { CreateAppointment, getAppointment };
 exports.default = PublicAppointmentService;
