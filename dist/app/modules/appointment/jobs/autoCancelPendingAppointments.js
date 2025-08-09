@@ -28,28 +28,31 @@ const autoCancelPendingAppointments = () => __awaiter(void 0, void 0, void 0, fu
             },
         },
     });
-    pendingAppointments.map((appointment) => __awaiter(void 0, void 0, void 0, function* () {
-        const result = yield prisma_1.default.appointment.update({
-            data: {
-                status: 'DELETED',
-                notes: 'Appointment canceled automatically lack of payment!',
-                time_slot: {
-                    update: {
-                        status: 'AVAILABLE',
+    // Only proceed if there are pending appointments
+    if (pendingAppointments.length > 0) {
+        yield Promise.all(pendingAppointments.map((appointment) => __awaiter(void 0, void 0, void 0, function* () {
+            const result = yield prisma_1.default.appointment.update({
+                data: {
+                    status: 'DELETED',
+                    notes: 'Appointment canceled automatically lack of payment!',
+                    time_slot: {
+                        update: {
+                            status: 'AVAILABLE',
+                        },
+                    },
+                    payment: {
+                        update: {
+                            status: 'DELETED',
+                        },
                     },
                 },
-                payment: {
-                    update: {
-                        status: 'DELETED',
-                    },
+                where: {
+                    id: appointment.id,
                 },
-            },
-            where: {
-                id: appointment.id,
-            },
-        });
-        return result;
-    }));
+            });
+            return result;
+        })));
+    }
 });
 const scheduledAutoCancelPendingJobs = () => {
     node_cron_1.default.schedule('*/15 * * * *', () => __awaiter(void 0, void 0, void 0, function* () {

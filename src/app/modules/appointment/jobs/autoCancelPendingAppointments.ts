@@ -17,29 +17,33 @@ const autoCancelPendingAppointments = async () => {
     },
   });
 
-  pendingAppointments.map(async (appointment) => {
-    const result = await prisma.appointment.update({
-      data: {
-        status: 'DELETED',
-        notes: 'Appointment canceled automatically lack of payment!',
-        time_slot: {
-          update: {
-            status: 'AVAILABLE',
-          },
-        },
-        payment: {
-          update: {
+  // Only proceed if there are pending appointments
+  if (pendingAppointments.length > 0) {
+    await Promise.all(
+      pendingAppointments.map(async (appointment) => {
+        const result = await prisma.appointment.update({
+          data: {
             status: 'DELETED',
+            notes: 'Appointment canceled automatically lack of payment!',
+            time_slot: {
+              update: {
+                status: 'AVAILABLE',
+              },
+            },
+            payment: {
+              update: {
+                status: 'DELETED',
+              },
+            },
           },
-        },
-      },
-      where: {
-        id: appointment.id,
-      },
-    });
-
-    return result;
-  });
+          where: {
+            id: appointment.id,
+          },
+        });
+        return result;
+      }),
+    );
+  }
 };
 
 export const scheduledAutoCancelPendingJobs = () => {
