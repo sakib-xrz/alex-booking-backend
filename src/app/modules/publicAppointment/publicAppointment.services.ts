@@ -144,6 +144,24 @@ const CreateAppointment = async (
   };
 };
 
-const PublicAppointmentService = { CreateAppointment };
+const getAppointment = async (id: string) => {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id },
+    include: {
+      client: true,
+      counselor: true,
+      time_slot: true,
+      payment: true,
+    },
+  });
+
+  if (!appointment) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Appointment not found');
+  }
+
+  return appointment;
+};
+
+const PublicAppointmentService = { CreateAppointment, getAppointment };
 
 export default PublicAppointmentService;

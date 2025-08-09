@@ -11,4 +11,6 @@ router.post(
   PublicAppointmentController.PostAppointment,
 );
 
+router.get('/:id', PublicAppointmentController.getAppointment);
+
 export const PublicAppointmentRoutes = router;
