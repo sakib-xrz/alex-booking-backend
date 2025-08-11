@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import GoogleOAuthService from './google.services';
 import AppError from '../../errors/AppError';
+import config from '../../config';
 
 // Get Google OAuth URL for doctor to connect calendar
 const getGoogleAuthUrl = catchAsync(async (req, res) => {
@@ -36,13 +37,10 @@ const handleGoogleCallback = catchAsync(async (req, res) => {
     );
   }
 
-  const result = await GoogleOAuthService.handleOAuthCallback(
-    code as string,
-    userId,
-  );
+  await GoogleOAuthService.handleOAuthCallback(code as string, userId);
 
   // Redirect to frontend with success message
-  const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000';
+  const frontendUrl = config.base_url.admin_frontend;
   res.redirect(`${frontendUrl}/dashboard?calendar=connected`);
 });
 

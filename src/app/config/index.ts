@@ -36,4 +36,8 @@ export default {
     client_secret: process.env.GOOGLE_CLIENT_SECRET,
     redirect_uri: process.env.GOOGLE_REDIRECT_URI,
   },
+
+  base_url: {
+    admin_frontend: process.env.ADMIN_FRONTEND_BASE_URL,
+  },
 };

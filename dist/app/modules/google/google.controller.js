@@ -17,6 +17,7 @@ const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const google_services_1 = __importDefault(require("./google.services"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
+const config_1 = __importDefault(require("../../config"));
 // Get Google OAuth URL for doctor to connect calendar
 const getGoogleAuthUrl = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user.id; // Get user ID from auth middleware
@@ -38,9 +39,9 @@ const handleGoogleCallback = (0, catchAsync_1.default)((req, res) => __awaiter(v
     if (!userId) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'User ID not found in state parameter');
     }
-    const result = yield google_services_1.default.handleOAuthCallback(code, userId);
+    yield google_services_1.default.handleOAuthCallback(code, userId);
     // Redirect to frontend with success message
-    const frontendUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:3000';
+    const frontendUrl = config_1.default.base_url.admin_frontend;
     res.redirect(`${frontendUrl}/dashboard?calendar=connected`);
 }));
 // Get Google Calendar connection status
