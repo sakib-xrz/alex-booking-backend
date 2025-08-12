@@ -98,6 +98,12 @@ const GetCounselorAppointmentsById = (counselor_id, filters, paginationOptions) 
                     phone: true,
                 },
             },
+            meeting: {
+                select: {
+                    platform: true,
+                    link: true,
+                },
+            },
             created_at: true,
         },
         orderBy,
@@ -130,51 +136,50 @@ const GetCounselorAppointmentsById = (counselor_id, filters, paginationOptions) 
     };
 });
 const GetCounselorAppointmentDetailsById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
-    const appointment = yield prisma_1.default.appointment.findUniqueOrThrow({
+    const appointment = yield prisma_1.default.appointment.findUnique({
         where: {
             id,
         },
-        include: {
-            client: true,
-            time_slot: true,
-            payment: true,
+        select: {
+            id: true,
+            date: true,
+            session_type: true,
+            status: true,
+            time_slot: {
+                select: {
+                    start_time: true,
+                    end_time: true,
+                },
+            },
+            client: {
+                select: {
+                    first_name: true,
+                    last_name: true,
+                    email: true,
+                    phone: true,
+                    date_of_birth: true,
+                    gender: true,
+                },
+            },
+            meeting: {
+                select: {
+                    platform: true,
+                    link: true,
+                },
+            },
+            payment: {
+                select: {
+                    amount: true,
+                    currency: true,
+                    status: true,
+                    transaction_id: true,
+                },
+            },
+            notes: true,
+            created_at: true,
         },
     });
-    const formattedAppointment = {
-        id: appointment.id,
-        appointmentDate: appointment.date,
-        sessionType: appointment.session_type,
-        notes: appointment.notes,
-        status: appointment.status,
-        createdAt: appointment.created_at,
-        client: {
-            firstName: appointment.client.first_name,
-            lastName: appointment.client.last_name,
-            email: appointment.client.email,
-            phone: appointment.client.phone,
-            dateOfBirth: appointment.client.date_of_birth,
-            gender: appointment.client.gender,
-            isVerified: appointment.client.is_verified,
-            createdAt: appointment.client.created_at,
-        },
-        timeSlot: {
-            id: appointment.time_slot.id,
-            startTime: appointment.time_slot.start_time,
-            endTime: appointment.time_slot.end_time,
-        },
-        payment: {
-            id: (_a = appointment.payment) === null || _a === void 0 ? void 0 : _a.id,
-            amount: (_b = appointment.payment) === null || _b === void 0 ? void 0 : _b.amount,
-            status: (_c = appointment.payment) === null || _c === void 0 ? void 0 : _c.status,
-            paymentMethod: (_d = appointment.payment) === null || _d === void 0 ? void 0 : _d.payment_method,
-            transactionId: (_e = appointment.payment) === null || _e === void 0 ? void 0 : _e.transaction_id,
-            refundAmount: (_f = appointment.payment) === null || _f === void 0 ? void 0 : _f.refund_amount,
-            refundReason: (_g = appointment.payment) === null || _g === void 0 ? void 0 : _g.refund_reason,
-            createdAt: (_h = appointment.payment) === null || _h === void 0 ? void 0 : _h.created_at,
-        },
-    };
-    return formattedAppointment;
+    return appointment;
 });
 const AppointmentService = {
     GetCounselorAppointmentsById,
