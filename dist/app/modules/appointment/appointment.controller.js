@@ -15,14 +15,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
+const pick_1 = __importDefault(require("../../utils/pick"));
 const appointment_services_1 = __importDefault(require("./appointment.services"));
 const GetCounselorAppointments = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield appointment_services_1.default.GetCounselorAppointmentsById(req.user.id);
+    // Pick only allowed filter and pagination fields from query
+    const filters = (0, pick_1.default)(req.query, ['search', 'session_type', 'status', 'date']);
+    const paginationOptions = (0, pick_1.default)(req.query, [
+        'page',
+        'limit',
+        'sort_by',
+        'sort_order',
+    ]);
+    const result = yield appointment_services_1.default.GetCounselorAppointmentsById(req.user.id, filters, paginationOptions);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Appointments retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const GetCounselorAppointmentDetailsById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

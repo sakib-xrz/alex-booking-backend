@@ -1,13 +1,19 @@
 import express from 'express';
 import AppointmentController from './appointment.controller';
 import auth from '../../middlewares/auth';
+import validateRequest from '../../middlewares/validateRequest';
+import AppointmentValidation from './appointment.validation';
 import { Role } from '@prisma/client';
 
 const router = express.Router();
 
 router.use(auth(Role.SUPER_ADMIN, Role.COUNSELOR));
 
-router.get('/', AppointmentController.GetCounselorAppointments);
+router.get(
+  '/',
+  validateRequest(AppointmentValidation.getAppointmentsQuerySchema),
+  AppointmentController.GetCounselorAppointments,
+);
 router.get(
   '/:appointmentId',
   AppointmentController.GetCounselorAppointmentDetailsById,

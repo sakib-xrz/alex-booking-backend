@@ -13,14 +13,72 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../utils/prisma"));
-const GetCounselorAppointmentsById = (counselor_id) => __awaiter(void 0, void 0, void 0, function* () {
-    const appointments = yield prisma_1.default.appointment.findMany({
-        where: {
-            counselor_id,
-            status: {
-                not: 'PENDING',
-            },
+const pagination_1 = __importDefault(require("../../utils/pagination"));
+const appointment_constant_1 = require("./appointment.constant");
+const GetCounselorAppointmentsById = (counselor_id, filters, paginationOptions) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page, limit, skip, sort_by, sort_order } = (0, pagination_1.default)(paginationOptions);
+    const { search, session_type, status, date } = filters;
+    // Build where clause
+    const whereConditions = {
+        counselor_id,
+        status: {
+            not: 'PENDING',
         },
+    };
+    // Add search functionality across client fields
+    if (search) {
+        whereConditions.OR = appointment_constant_1.appointmentSearchableFields.map((field) => ({
+            client: {
+                [field]: {
+                    contains: search,
+                    mode: 'insensitive',
+                },
+            },
+        }));
+    }
+    // Add session_type filter
+    if (session_type) {
+        whereConditions.session_type = session_type;
+    }
+    // Add status filter
+    if (status) {
+        whereConditions.status = status;
+    }
+    // Add date filter
+    if (date) {
+        whereConditions.date = new Date(date);
+    }
+    // Build order by clause
+    const orderBy = {};
+    if (sort_by === 'client_name') {
+        orderBy.client = {
+            first_name: sort_order,
+        };
+    }
+    else if (sort_by === 'client_email') {
+        orderBy.client = {
+            email: sort_order,
+        };
+    }
+    else if (sort_by === 'session_type') {
+        orderBy.session_type = sort_order;
+    }
+    else if (sort_by === 'status') {
+        orderBy.status = sort_order;
+    }
+    else if (sort_by === 'date') {
+        orderBy.date = sort_order;
+    }
+    else {
+        orderBy.created_at = sort_order;
+    }
+    // Get total count for pagination
+    const total = yield prisma_1.default.appointment.count({
+        where: whereConditions,
+    });
+    // Get appointments with pagination
+    const appointments = yield prisma_1.default.appointment.findMany({
+        where: whereConditions,
         select: {
             id: true,
             date: true,
@@ -42,9 +100,9 @@ const GetCounselorAppointmentsById = (counselor_id) => __awaiter(void 0, void 0,
             },
             created_at: true,
         },
-        orderBy: {
-            created_at: 'asc',
-        },
+        orderBy,
+        skip,
+        take: limit,
     });
     const formattedAppointments = appointments.map((appointment) => ({
         id: appointment.id,
@@ -61,7 +119,15 @@ const GetCounselorAppointmentsById = (counselor_id) => __awaiter(void 0, void 0,
         },
         createdAt: appointment.created_at,
     }));
-    return formattedAppointments;
+    return {
+        data: formattedAppointments,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
 });
 const GetCounselorAppointmentDetailsById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h;

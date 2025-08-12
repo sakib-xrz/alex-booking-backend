@@ -1,18 +1,31 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import pick from '../../utils/pick';
 import AppointmentService from './appointment.services';
 
 const GetCounselorAppointments = catchAsync(async (req, res) => {
+  // Pick only allowed filter and pagination fields from query
+  const filters = pick(req.query, ['search', 'session_type', 'status', 'date']);
+  const paginationOptions = pick(req.query, [
+    'page',
+    'limit',
+    'sort_by',
+    'sort_order',
+  ]);
+
   const result = await AppointmentService.GetCounselorAppointmentsById(
     req.user.id,
+    filters,
+    paginationOptions,
   );
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Appointments retrieved successfully',
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
