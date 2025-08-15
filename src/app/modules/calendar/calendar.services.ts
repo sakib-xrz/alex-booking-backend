@@ -28,7 +28,6 @@ const GetCalenders = async (counselorId: string) => {
 };
 
 const CreateCalenderDate = async (counselorId: string, date: string | Date) => {
-  console.log('Date from line 31:', typeof date);
   const createdCalenderDate = await prisma.calendar.create({
     data: {
       counselor_id: counselorId,
@@ -39,14 +38,10 @@ const CreateCalenderDate = async (counselorId: string, date: string | Date) => {
   return createdCalenderDate;
 };
 
-const GetDateSlots = async (calendarId: string, type?: SessionType) => {
+const GetDateSlots = async (calendarId: string) => {
   const where: Prisma.TimeSlotWhereInput = {
     calendar_id: calendarId,
   };
-
-  if (type) {
-    where.type = type;
-  }
 
   const result = await prisma.timeSlot.findMany({
     where,

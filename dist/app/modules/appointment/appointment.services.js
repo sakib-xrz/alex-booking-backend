@@ -181,8 +181,20 @@ const GetCounselorAppointmentDetailsById = (id) => __awaiter(void 0, void 0, voi
     });
     return appointment;
 });
+const CompleteAppointmentById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const appointment = yield prisma_1.default.appointment.update({
+        where: {
+            id,
+        },
+        data: {
+            status: 'COMPLETED',
+        },
+    });
+    return appointment;
+});
 const AppointmentService = {
     GetCounselorAppointmentsById,
     GetCounselorAppointmentDetailsById,
+    CompleteAppointmentById,
 };
 exports.default = AppointmentService;

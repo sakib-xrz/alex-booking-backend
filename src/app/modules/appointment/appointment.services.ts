@@ -192,9 +192,23 @@ const GetCounselorAppointmentDetailsById = async (id: string) => {
   return appointment;
 };
 
+const CompleteAppointmentById = async (id: string) => {
+  const appointment = await prisma.appointment.update({
+    where: {
+      id,
+    },
+    data: {
+      status: 'COMPLETED',
+    },
+  });
+
+  return appointment;
+};
+
 const AppointmentService = {
   GetCounselorAppointmentsById,
   GetCounselorAppointmentDetailsById,
+  CompleteAppointmentById,
 };
 
 export default AppointmentService;

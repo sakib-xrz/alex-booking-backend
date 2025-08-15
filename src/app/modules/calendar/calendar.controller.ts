@@ -2,7 +2,6 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import CalendarService from './calendar.services';
-import { SessionType } from '@prisma/client';
 
 const GetCalendar = catchAsync(async (req, res) => {
   const result = await CalendarService.GetCalenders(req.user.id);
@@ -27,8 +26,7 @@ const PostCalendarDate = catchAsync(async (req, res) => {
 });
 
 const GetDateSlots = catchAsync(async (req, res) => {
-  const type = req.query.type as SessionType;
-  const result = await CalendarService.GetDateSlots(req.params.id, type);
+  const result = await CalendarService.GetDateSlots(req.params.id);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,

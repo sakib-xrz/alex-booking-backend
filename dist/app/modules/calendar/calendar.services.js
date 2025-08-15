@@ -38,7 +38,6 @@ const GetCalenders = (counselorId) => __awaiter(void 0, void 0, void 0, function
     return { calender };
 });
 const CreateCalenderDate = (counselorId, date) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Date from line 31:', typeof date);
     const createdCalenderDate = yield prisma_1.default.calendar.create({
         data: {
             counselor_id: counselorId,
@@ -47,13 +46,10 @@ const CreateCalenderDate = (counselorId, date) => __awaiter(void 0, void 0, void
     });
     return createdCalenderDate;
 });
-const GetDateSlots = (calendarId, type) => __awaiter(void 0, void 0, void 0, function* () {
+const GetDateSlots = (calendarId) => __awaiter(void 0, void 0, void 0, function* () {
     const where = {
         calendar_id: calendarId,
     };
-    if (type) {
-        where.type = type;
-    }
     const result = yield prisma_1.default.timeSlot.findMany({
         where,
         select: {

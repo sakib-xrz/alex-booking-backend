@@ -18,5 +18,9 @@ router.get(
   '/:appointmentId',
   AppointmentController.GetCounselorAppointmentDetailsById,
 );
+router.patch(
+  '/:appointmentId/completed',
+  AppointmentController.CompleteCounselorAppointmentById,
+);
 
 export const AppointmentRoutes = router;

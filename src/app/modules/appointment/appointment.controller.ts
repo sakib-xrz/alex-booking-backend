@@ -42,9 +42,23 @@ const GetCounselorAppointmentDetailsById = catchAsync(async (req, res) => {
   });
 });
 
+const CompleteCounselorAppointmentById = catchAsync(async (req, res) => {
+  const result = await AppointmentService.CompleteAppointmentById(
+    req.params.appointmentId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Appointment details retrieved successfully',
+    data: result,
+  });
+});
+
 const AppointmentController = {
   GetCounselorAppointments,
   GetCounselorAppointmentDetailsById,
+  CompleteCounselorAppointmentById,
 };
 
 export default AppointmentController;

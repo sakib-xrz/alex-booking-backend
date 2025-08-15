@@ -36,8 +36,7 @@ const PostCalendarDate = (0, catchAsync_1.default)((req, res) => __awaiter(void 
     });
 }));
 const GetDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const type = req.query.type;
-    const result = yield calendar_services_1.default.GetDateSlots(req.params.id, type);
+    const result = yield calendar_services_1.default.GetDateSlots(req.params.id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

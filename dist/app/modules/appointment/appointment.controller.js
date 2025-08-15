@@ -44,8 +44,18 @@ const GetCounselorAppointmentDetailsById = (0, catchAsync_1.default)((req, res) 
         data: result,
     });
 }));
+const CompleteCounselorAppointmentById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield appointment_services_1.default.CompleteAppointmentById(req.params.appointmentId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Appointment details retrieved successfully',
+        data: result,
+    });
+}));
 const AppointmentController = {
     GetCounselorAppointments,
     GetCounselorAppointmentDetailsById,
+    CompleteCounselorAppointmentById,
 };
 exports.default = AppointmentController;
