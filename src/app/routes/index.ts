@@ -9,6 +9,7 @@ import { PublicAppointmentRoutes } from '../modules/publicAppointment/publicAppo
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
 import { GoogleRoutes } from '../modules/google/google.routes';
+import DebugRoutes from '../modules/debug/debug.routes';
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ const routes: Route[] = [
   { path: '/otp', route: OptVerificationRoutes },
   { path: '/payments', route: PaymentRoutes },
   { path: '/google', route: GoogleRoutes },
+  { path: '/debug', route: DebugRoutes },
 ];
 
 routes.forEach((route) => {

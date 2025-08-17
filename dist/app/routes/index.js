@@ -14,6 +14,7 @@ const publicAppointment_routes_1 = require("../modules/publicAppointment/publicA
 const optVerification_routes_1 = require("../modules/optVerification/optVerification.routes");
 const payment_routes_1 = require("../modules/payment/payment.routes");
 const google_routes_1 = require("../modules/google/google.routes");
+const debug_routes_1 = __importDefault(require("../modules/debug/debug.routes"));
 const router = express_1.default.Router();
 const routes = [
     { path: '/auth', route: auth_routes_1.AuthRoutes },
@@ -26,6 +27,7 @@ const routes = [
     { path: '/otp', route: optVerification_routes_1.OptVerificationRoutes },
     { path: '/payments', route: payment_routes_1.PaymentRoutes },
     { path: '/google', route: google_routes_1.GoogleRoutes },
+    { path: '/debug', route: debug_routes_1.default },
 ];
 routes.forEach((route) => {
     router.use(route.path, route.route);

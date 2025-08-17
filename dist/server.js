@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./app/config"));
 const autoCancelPendingAppointments_1 = require("./app/modules/appointment/jobs/autoCancelPendingAppointments");
+const networkTest_1 = require("./app/utils/networkTest");
 process.on('uncaughtException', (err) => {
     console.error(err);
     process.exit(1);
@@ -22,9 +23,19 @@ process.on('uncaughtException', (err) => {
 let server = null;
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
-        server = app_1.default.listen(config_1.default.port, () => {
+        server = app_1.default.listen(config_1.default.port, () => __awaiter(this, void 0, void 0, function* () {
             console.log(`🎯 Server listening on port: ${config_1.default.port}`);
-        });
+            if (config_1.default.node_env === 'production') {
+                console.log('\n🔍 Running startup network diagnostics...');
+                try {
+                    yield (0, networkTest_1.logNetworkDiagnostics)();
+                }
+                catch (error) {
+                    console.error('Network diagnostics failed:', error);
+                }
+                console.log('📧 If you see SMTP connection issues above, check: https://api.209.38.80.244.nip.io/api/v1/debug/network-test\n');
+            }
+        }));
         if (server) {
             server.timeout = 30000;
             server.keepAliveTimeout = 61000;

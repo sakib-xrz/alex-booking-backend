@@ -16,48 +16,114 @@ const nodemailer_1 = __importDefault(require("nodemailer"));
 const config_1 = __importDefault(require("../config"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const transporter = nodemailer_1.default.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-        user: config_1.default.emailSender.email,
-        pass: config_1.default.emailSender.app_pass,
-    },
-    tls: {
-        rejectUnauthorized: false,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 5000,
-    socketTimeout: 10000,
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-});
+const createTransporter = () => {
+    const transporters = [
+        {
+            name: 'Gmail_587',
+            config: {
+                host: 'smtp.gmail.com',
+                port: 587,
+                secure: false,
+                auth: {
+                    user: config_1.default.emailSender.email,
+                    pass: config_1.default.emailSender.app_pass,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                    ciphers: 'SSLv3',
+                },
+                connectionTimeout: 15000,
+                greetingTimeout: 10000,
+                socketTimeout: 15000,
+                pool: false,
+                debug: true,
+            },
+        },
+        {
+            name: 'Gmail_465',
+            config: {
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
+                auth: {
+                    user: config_1.default.emailSender.email,
+                    pass: config_1.default.emailSender.app_pass,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+                connectionTimeout: 15000,
+                greetingTimeout: 10000,
+                socketTimeout: 15000,
+                pool: false,
+                debug: true,
+            },
+        },
+        {
+            name: 'Gmail_25',
+            config: {
+                host: 'smtp.gmail.com',
+                port: 25,
+                secure: false,
+                auth: {
+                    user: config_1.default.emailSender.email,
+                    pass: config_1.default.emailSender.app_pass,
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                },
+                connectionTimeout: 15000,
+                greetingTimeout: 10000,
+                socketTimeout: 15000,
+                pool: false,
+                debug: true,
+            },
+        },
+    ];
+    return transporters.map((t) => ({
+        name: t.name,
+        transporter: nodemailer_1.default.createTransport(t.config),
+    }));
+};
+const transporters = createTransporter();
 const sendMail = (to, subject, body, attachmentPath) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const attachment = attachmentPath
-            ? {
-                filename: path_1.default.basename(attachmentPath),
-                content: fs_1.default.readFileSync(attachmentPath),
-                encoding: 'base64',
+    const attachment = attachmentPath
+        ? {
+            filename: path_1.default.basename(attachmentPath),
+            content: fs_1.default.readFileSync(attachmentPath),
+            encoding: 'base64',
+        }
+        : undefined;
+    const mailOptions = {
+        from: `"Alexander Rodriguez" <${config_1.default.emailSender.email}>`,
+        to,
+        subject,
+        html: body,
+        attachments: attachment ? [attachment] : [],
+    };
+    let lastError = null;
+    for (const { name, transporter } of transporters) {
+        try {
+            console.log(`Attempting to send email using ${name}`);
+            const emailPromise = transporter.sendMail(mailOptions);
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error(`${name} timeout`)), 20000));
+            yield Promise.race([emailPromise, timeoutPromise]);
+            console.log(`Email sent successfully to ${to} using ${name}`);
+            return;
+        }
+        catch (error) {
+            lastError = error;
+            console.error(`Failed to send email using ${name}:`, error);
+            if (error instanceof Error &&
+                (error.message.includes('Invalid login') ||
+                    error.message.includes('authentication'))) {
+                console.error('Authentication failed, stopping retry attempts');
+                break;
             }
-            : undefined;
-        const mailOptions = {
-            from: `"Alexander Rodriguez" <${config_1.default.emailSender.email}>`,
-            to,
-            subject,
-            html: body,
-            attachments: attachment ? [attachment] : [],
-        };
-        const emailPromise = transporter.sendMail(mailOptions);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email sending timeout')), 15000));
-        yield Promise.race([emailPromise, timeoutPromise]);
-        console.log(`Email sent successfully to ${to}`);
+            continue;
+        }
     }
-    catch (error) {
-        console.error('Email sending failed:', error);
-        throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    console.error('All email transporters failed');
+    throw new Error(`Failed to send email with all transporters. Last error: ${(lastError === null || lastError === void 0 ? void 0 : lastError.message) || 'Unknown error'}`);
 });
 exports.default = sendMail;

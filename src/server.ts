@@ -2,6 +2,7 @@ import { Server } from 'http';
 import app from './app';
 import config from './app/config';
 import { scheduledAutoCancelPendingJobs } from './app/modules/appointment/jobs/autoCancelPendingAppointments';
+import { logNetworkDiagnostics } from './app/utils/networkTest';
 
 process.on('uncaughtException', (err) => {
   console.error(err);
@@ -11,8 +12,21 @@ process.on('uncaughtException', (err) => {
 let server: Server | null = null;
 
 async function startServer() {
-  server = app.listen(config.port, () => {
+  server = app.listen(config.port, async () => {
     console.log(`🎯 Server listening on port: ${config.port}`);
+
+    // Run network diagnostics on startup (only in production)
+    if (config.node_env === 'production') {
+      console.log('\n🔍 Running startup network diagnostics...');
+      try {
+        await logNetworkDiagnostics();
+      } catch (error) {
+        console.error('Network diagnostics failed:', error);
+      }
+      console.log(
+        '📧 If you see SMTP connection issues above, check: https://api.209.38.80.244.nip.io/api/v1/debug/network-test\n',
+      );
+    }
   });
 
   // Set server timeout to 30 seconds (30000ms)
