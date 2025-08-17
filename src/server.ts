@@ -15,6 +15,13 @@ async function startServer() {
     console.log(`🎯 Server listening on port: ${config.port}`);
   });
 
+  // Set server timeout to 30 seconds (30000ms)
+  if (server) {
+    server.timeout = 30000;
+    server.keepAliveTimeout = 61000; // Should be higher than timeout
+    server.headersTimeout = 62000; // Should be higher than keepAliveTimeout
+  }
+
   process.on('unhandledRejection', (error) => {
     if (server) {
       server.close(() => {

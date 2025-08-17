@@ -27,22 +27,37 @@ const transporter = nodemailer_1.default.createTransport({
     tls: {
         rejectUnauthorized: false,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
 });
 const sendMail = (to, subject, body, attachmentPath) => __awaiter(void 0, void 0, void 0, function* () {
-    const attachment = attachmentPath
-        ? {
-            filename: path_1.default.basename(attachmentPath),
-            content: fs_1.default.readFileSync(attachmentPath),
-            encoding: 'base64',
-        }
-        : undefined;
-    const mailOptions = {
-        from: `"Alexander Rodriguez" <${config_1.default.emailSender.email}>`,
-        to,
-        subject,
-        html: body,
-        attachments: attachment ? [attachment] : [],
-    };
-    yield transporter.sendMail(mailOptions);
+    try {
+        const attachment = attachmentPath
+            ? {
+                filename: path_1.default.basename(attachmentPath),
+                content: fs_1.default.readFileSync(attachmentPath),
+                encoding: 'base64',
+            }
+            : undefined;
+        const mailOptions = {
+            from: `"Alexander Rodriguez" <${config_1.default.emailSender.email}>`,
+            to,
+            subject,
+            html: body,
+            attachments: attachment ? [attachment] : [],
+        };
+        const emailPromise = transporter.sendMail(mailOptions);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email sending timeout')), 15000));
+        yield Promise.race([emailPromise, timeoutPromise]);
+        console.log(`Email sent successfully to ${to}`);
+    }
+    catch (error) {
+        console.error('Email sending failed:', error);
+        throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 });
 exports.default = sendMail;

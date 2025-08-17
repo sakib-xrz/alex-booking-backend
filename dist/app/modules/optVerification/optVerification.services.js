@@ -16,7 +16,7 @@ const date_fns_1 = require("date-fns");
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
-const mailer_1 = __importDefault(require("../../utils/mailer"));
+const emailQueue_1 = __importDefault(require("../../utils/emailQueue"));
 const optVerification_utils_1 = __importDefault(require("./optVerification.utils"));
 const optVerification_constant_1 = require("./optVerification.constant");
 const CreateOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email }) {
@@ -46,19 +46,21 @@ const CreateOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email }) 
     });
     try {
         const emailTemplate = optVerification_utils_1.default.createOTPEmailTemplate(otp);
-        yield (0, mailer_1.default)(email, 'Email Verification - Your OTP Code', emailTemplate);
+        const emailJobId = yield emailQueue_1.default.addEmail(email, 'Email Verification - Your OTP Code', emailTemplate);
+        console.log(`OTP email queued for ${email} with job ID: ${emailJobId}`);
     }
     catch (error) {
-        console.log(error);
+        console.error('Failed to queue email:', error);
         yield prisma_1.default.emailOTPVerification.delete({
             where: { id: result.id },
         });
-        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to send OTP email. Please try again.');
+        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to process OTP request. Please try again.');
     }
     return {
         email: result.email,
         expires_at: result.expires_at,
         is_verified: result.is_verified,
+        message: 'OTP generated and email is being sent',
     };
 });
 const VerifyOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email, otp }) {

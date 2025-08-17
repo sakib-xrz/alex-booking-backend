@@ -2,7 +2,7 @@ import { addMinutes, differenceInSeconds } from 'date-fns';
 import prisma from '../../utils/prisma';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
-import sendMail from '../../utils/mailer';
+import emailQueue from '../../utils/emailQueue';
 import OptVerificationUtils from './optVerification.utils';
 import {
   OTP_EXPIRY_MINUTES,
@@ -48,19 +48,27 @@ const CreateOpt = async ({ email }: { email: string }) => {
     },
   });
 
-  // Send OTP via email
+  // Queue the email for async processing to avoid blocking the response
   try {
     const emailTemplate = OptVerificationUtils.createOTPEmailTemplate(otp);
-    await sendMail(email, 'Email Verification - Your OTP Code', emailTemplate);
+    const emailJobId = await emailQueue.addEmail(
+      email,
+      'Email Verification - Your OTP Code',
+      emailTemplate,
+    );
+
+    console.log(`OTP email queued for ${email} with job ID: ${emailJobId}`);
   } catch (error) {
-    console.log(error);
-    // If email sending fails, delete the OTP record and throw error
+    console.error('Failed to queue email:', error);
+
+    // Delete the OTP record if we can't even queue the email
     await prisma.emailOTPVerification.delete({
       where: { id: result.id },
     });
+
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to send OTP email. Please try again.',
+      'Failed to process OTP request. Please try again.',
     );
   }
 
@@ -69,6 +77,7 @@ const CreateOpt = async ({ email }: { email: string }) => {
     email: result.email,
     expires_at: result.expires_at,
     is_verified: result.is_verified,
+    message: 'OTP generated and email is being sent',
   };
 };
 

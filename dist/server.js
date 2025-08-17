@@ -25,6 +25,11 @@ function startServer() {
         server = app_1.default.listen(config_1.default.port, () => {
             console.log(`🎯 Server listening on port: ${config_1.default.port}`);
         });
+        if (server) {
+            server.timeout = 30000;
+            server.keepAliveTimeout = 61000;
+            server.headersTimeout = 62000;
+        }
         process.on('unhandledRejection', (error) => {
             if (server) {
                 server.close(() => {
