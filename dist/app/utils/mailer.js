@@ -19,7 +19,7 @@ const path_1 = __importDefault(require("path"));
 const createTransporter = () => {
     const transporters = [
         {
-            name: 'Gmail_587',
+            name: 'Gmail_TLS_587',
             config: {
                 host: 'smtp.gmail.com',
                 port: 587,
@@ -28,19 +28,14 @@ const createTransporter = () => {
                     user: config_1.default.emailSender.email,
                     pass: config_1.default.emailSender.app_pass,
                 },
-                tls: {
-                    rejectUnauthorized: false,
-                    ciphers: 'SSLv3',
-                },
                 connectionTimeout: 15000,
                 greetingTimeout: 10000,
                 socketTimeout: 15000,
-                pool: false,
-                debug: true,
+                logger: true,
             },
         },
         {
-            name: 'Gmail_465',
+            name: 'Gmail_SSL_465',
             config: {
                 host: 'smtp.gmail.com',
                 port: 465,
@@ -49,34 +44,10 @@ const createTransporter = () => {
                     user: config_1.default.emailSender.email,
                     pass: config_1.default.emailSender.app_pass,
                 },
-                tls: {
-                    rejectUnauthorized: false,
-                },
                 connectionTimeout: 15000,
                 greetingTimeout: 10000,
                 socketTimeout: 15000,
-                pool: false,
-                debug: true,
-            },
-        },
-        {
-            name: 'Gmail_25',
-            config: {
-                host: 'smtp.gmail.com',
-                port: 25,
-                secure: false,
-                auth: {
-                    user: config_1.default.emailSender.email,
-                    pass: config_1.default.emailSender.app_pass,
-                },
-                tls: {
-                    rejectUnauthorized: false,
-                },
-                connectionTimeout: 15000,
-                greetingTimeout: 10000,
-                socketTimeout: 15000,
-                pool: false,
-                debug: true,
+                logger: true,
             },
         },
     ];
@@ -104,26 +75,22 @@ const sendMail = (to, subject, body, attachmentPath) => __awaiter(void 0, void 0
     let lastError = null;
     for (const { name, transporter } of transporters) {
         try {
-            console.log(`Attempting to send email using ${name}`);
-            const emailPromise = transporter.sendMail(mailOptions);
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error(`${name} timeout`)), 20000));
-            yield Promise.race([emailPromise, timeoutPromise]);
-            console.log(`Email sent successfully to ${to} using ${name}`);
-            return;
+            console.log(`:incoming_envelope: Attempting to send email using ${name}`);
+            const info = yield transporter.sendMail(mailOptions);
+            console.log(`:white_tick: Email sent to ${to} using ${name}: ${info.messageId}`);
+            return info;
         }
         catch (error) {
             lastError = error;
-            console.error(`Failed to send email using ${name}:`, error);
+            console.error(`:x: Failed with ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             if (error instanceof Error &&
                 (error.message.includes('Invalid login') ||
                     error.message.includes('authentication'))) {
-                console.error('Authentication failed, stopping retry attempts');
+                console.error(':no_entry_symbol: Authentication failed, stopping retries.');
                 break;
             }
-            continue;
         }
     }
-    console.error('All email transporters failed');
-    throw new Error(`Failed to send email with all transporters. Last error: ${(lastError === null || lastError === void 0 ? void 0 : lastError.message) || 'Unknown error'}`);
+    throw new Error(`All transporters failed. Last error: ${lastError instanceof Error ? lastError.message : 'Unknown'}`);
 });
 exports.default = sendMail;
