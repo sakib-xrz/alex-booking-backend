@@ -1,19 +1,58 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserRoutes = void 0;
-const express_1 = __importDefault(require("express"));
-const client_1 = require("@prisma/client");
-const auth_1 = __importDefault(require("../../middlewares/auth"));
-const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
-const user_controller_1 = require("./user.controller");
-const user_validation_1 = __importDefault(require("./user.validation"));
-const multer_1 = __importDefault(require("multer"));
-const router = express_1.default.Router();
-const upload = (0, multer_1.default)();
-router.use((0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELOR));
-router.patch('/profile', (0, validateRequest_1.default)(user_validation_1.default.updateProfileSchema), user_controller_1.UserController.UpdateProfile);
-router.patch('/profile/picture', upload.single('image'), user_controller_1.UserController.UpdateProfilePicture);
-exports.UserRoutes = router;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var user_routes_exports = {};
+__export(user_routes_exports, {
+  UserRoutes: () => UserRoutes
+});
+module.exports = __toCommonJS(user_routes_exports);
+var import_express = __toESM(require("express"));
+var import_client = require("@prisma/client");
+var import_auth = __toESM(require("../../middlewares/auth"));
+var import_validateRequest = __toESM(require("../../middlewares/validateRequest"));
+var import_user = require("./user.controller");
+var import_user2 = __toESM(require("./user.validation"));
+var import_multer = __toESM(require("multer"));
+const router = import_express.default.Router();
+const upload = (0, import_multer.default)();
+router.use((0, import_auth.default)(import_client.Role.SUPER_ADMIN, import_client.Role.COUNSELOR));
+router.patch(
+  "/profile",
+  (0, import_validateRequest.default)(import_user2.default.updateProfileSchema),
+  import_user.UserController.UpdateProfile
+);
+router.patch(
+  "/profile/picture",
+  upload.single("image"),
+  import_user.UserController.UpdateProfilePicture
+);
+const UserRoutes = router;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  UserRoutes
+});

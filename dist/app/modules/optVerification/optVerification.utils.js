@@ -1,13 +1,34 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const optVerification_constant_1 = require("./optVerification.constant");
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var optVerification_utils_exports = {};
+__export(optVerification_utils_exports, {
+  default: () => optVerification_utils_default
+});
+module.exports = __toCommonJS(optVerification_utils_exports);
+var import_optVerification = require("./optVerification.constant");
 const generateOTP = () => {
-    const min = Math.pow(10, optVerification_constant_1.OTP_LENGTH - 1);
-    const max = Math.pow(10, optVerification_constant_1.OTP_LENGTH) - 1;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  const min = Math.pow(10, import_optVerification.OTP_LENGTH - 1);
+  const max = Math.pow(10, import_optVerification.OTP_LENGTH) - 1;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 const createOTPEmailTemplate = (otp) => {
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -41,7 +62,7 @@ const createOTPEmailTemplate = (otp) => {
   `;
 };
 const OptVerificationUtils = {
-    generateOTP,
-    createOTPEmailTemplate,
+  generateOTP,
+  createOTPEmailTemplate
 };
-exports.default = OptVerificationUtils;
+var optVerification_utils_default = OptVerificationUtils;

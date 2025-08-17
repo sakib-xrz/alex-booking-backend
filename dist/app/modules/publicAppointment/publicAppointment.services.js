@@ -1,131 +1,152 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const http_status_1 = __importDefault(require("http-status"));
-const AppError_1 = __importDefault(require("../../errors/AppError"));
-const prisma_1 = __importDefault(require("../../utils/prisma"));
-const CreateAppointment = (clientData, appointmentData) => __awaiter(void 0, void 0, void 0, function* () {
-    // Check expected slot is available
-    const expectedSlot = yield prisma_1.default.timeSlot.findFirst({
-        where: {
-            id: appointmentData.time_slot_id,
-            status: 'AVAILABLE',
-        },
-        include: {
-            calendar: {
-                include: {
-                    counselor: true,
-                },
-            },
-        },
-    });
-    if (!expectedSlot) {
-        throw new AppError_1.default(http_status_1.default.UNPROCESSABLE_ENTITY, 'Slot is not available.');
-    }
-    // Verify the session type matches the slot type
-    if (expectedSlot.type !== appointmentData.session_type) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Session type does not match the selected time slot type.');
-    }
-    // Verify the counselor matches
-    if (expectedSlot.calendar.counselor_id !== appointmentData.counselor_id) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Counselor does not match the selected time slot.');
-    }
-    const appointment = yield prisma_1.default.$transaction((transaction) => __awaiter(void 0, void 0, void 0, function* () {
-        let client_id;
-        // 1. Check if the client exists
-        const existingClient = yield transaction.client.findUnique({
-            where: {
-                email: clientData.email,
-            },
-        });
-        if (existingClient === null || existingClient === void 0 ? void 0 : existingClient.id) {
-            client_id = existingClient.id;
-            // Update existing client data if needed
-            yield transaction.client.update({
-                where: { id: client_id },
-                data: {
-                    first_name: clientData.first_name,
-                    last_name: clientData.last_name,
-                    phone: clientData.phone,
-                    date_of_birth: new Date(clientData.date_of_birth).toISOString(),
-                    gender: clientData.gender,
-                },
-            });
-        }
-        else {
-            // 2. Create new client
-            const newClient = yield transaction.client.create({
-                data: {
-                    first_name: clientData.first_name,
-                    last_name: clientData.last_name,
-                    email: clientData.email,
-                    phone: clientData.phone,
-                    date_of_birth: new Date(clientData.date_of_birth).toISOString(),
-                    gender: clientData.gender,
-                },
-            });
-            client_id = newClient.id;
-        }
-        // 3. Mark the time slot as PROCESSING to prevent double booking
-        yield transaction.timeSlot.update({
-            where: { id: expectedSlot.id },
-            data: { status: 'PROCESSING' },
-        });
-        console.log('Appointment data from line 102:', appointmentData);
-        // 4. Create Appointment with PENDING status
-        const newAppointment = yield transaction.appointment.create({
-            data: {
-                client_id,
-                time_slot_id: expectedSlot.id,
-                counselor_id: appointmentData.counselor_id,
-                date: new Date(appointmentData.date).toISOString(),
-                session_type: appointmentData.session_type,
-                notes: appointmentData.notes,
-                status: 'PENDING',
-            },
-            include: {
-                client: true,
-                counselor: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-                time_slot: true,
-            },
-        });
-        console.log('Appointment created data from line 128:', newAppointment);
-        return newAppointment;
-    }));
-    // Return appointment with payment required status
-    return Object.assign(Object.assign({}, appointment), { requires_payment: true });
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var publicAppointment_services_exports = {};
+__export(publicAppointment_services_exports, {
+  default: () => publicAppointment_services_default
 });
-const getAppointment = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const appointment = yield prisma_1.default.appointment.findUnique({
-        where: { id },
+module.exports = __toCommonJS(publicAppointment_services_exports);
+var import_http_status = __toESM(require("http-status"));
+var import_AppError = __toESM(require("../../errors/AppError"));
+var import_prisma = __toESM(require("../../utils/prisma"));
+const CreateAppointment = async (clientData, appointmentData) => {
+  const expectedSlot = await import_prisma.default.timeSlot.findFirst({
+    where: {
+      id: appointmentData.time_slot_id,
+      status: "AVAILABLE"
+    },
+    include: {
+      calendar: {
         include: {
-            client: true,
-            counselor: true,
-            time_slot: true,
-            payment: true,
-        },
-    });
-    if (!appointment) {
-        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+          counselor: true
+        }
+      }
     }
-    return appointment;
-});
+  });
+  if (!expectedSlot) {
+    throw new import_AppError.default(
+      import_http_status.default.UNPROCESSABLE_ENTITY,
+      "Slot is not available."
+    );
+  }
+  if (expectedSlot.type !== appointmentData.session_type) {
+    throw new import_AppError.default(
+      import_http_status.default.BAD_REQUEST,
+      "Session type does not match the selected time slot type."
+    );
+  }
+  if (expectedSlot.calendar.counselor_id !== appointmentData.counselor_id) {
+    throw new import_AppError.default(
+      import_http_status.default.BAD_REQUEST,
+      "Counselor does not match the selected time slot."
+    );
+  }
+  const appointment = await import_prisma.default.$transaction(async (transaction) => {
+    let client_id;
+    const existingClient = await transaction.client.findUnique({
+      where: {
+        email: clientData.email
+      }
+    });
+    if (existingClient == null ? void 0 : existingClient.id) {
+      client_id = existingClient.id;
+      await transaction.client.update({
+        where: { id: client_id },
+        data: {
+          first_name: clientData.first_name,
+          last_name: clientData.last_name,
+          phone: clientData.phone,
+          date_of_birth: new Date(clientData.date_of_birth).toISOString(),
+          gender: clientData.gender
+        }
+      });
+    } else {
+      const newClient = await transaction.client.create({
+        data: {
+          first_name: clientData.first_name,
+          last_name: clientData.last_name,
+          email: clientData.email,
+          phone: clientData.phone,
+          date_of_birth: new Date(clientData.date_of_birth).toISOString(),
+          gender: clientData.gender
+        }
+      });
+      client_id = newClient.id;
+    }
+    await transaction.timeSlot.update({
+      where: { id: expectedSlot.id },
+      data: { status: "PROCESSING" }
+    });
+    console.log("Appointment data from line 102:", appointmentData);
+    const newAppointment = await transaction.appointment.create({
+      data: {
+        client_id,
+        time_slot_id: expectedSlot.id,
+        counselor_id: appointmentData.counselor_id,
+        date: new Date(appointmentData.date).toISOString(),
+        session_type: appointmentData.session_type,
+        notes: appointmentData.notes,
+        status: "PENDING"
+      },
+      include: {
+        client: true,
+        counselor: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        time_slot: true
+      }
+    });
+    console.log("Appointment created data from line 128:", newAppointment);
+    return newAppointment;
+  });
+  return {
+    ...appointment,
+    requires_payment: true
+  };
+};
+const getAppointment = async (id) => {
+  const appointment = await import_prisma.default.appointment.findUnique({
+    where: { id },
+    include: {
+      client: true,
+      counselor: true,
+      time_slot: true,
+      payment: true
+    }
+  });
+  if (!appointment) {
+    throw new import_AppError.default(import_http_status.default.NOT_FOUND, "Appointment not found");
+  }
+  return appointment;
+};
 const PublicAppointmentService = { CreateAppointment, getAppointment };
-exports.default = PublicAppointmentService;
+var publicAppointment_services_default = PublicAppointmentService;

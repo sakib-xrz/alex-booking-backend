@@ -1,48 +1,66 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const nodemailer_1 = __importDefault(require("nodemailer"));
-const config_1 = __importDefault(require("../config"));
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const transporter = nodemailer_1.default.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Use `true` for port 465, `false` for all other ports
-    auth: {
-        user: config_1.default.emailSender.email,
-        pass: config_1.default.emailSender.app_pass,
-    },
-    tls: {
-        rejectUnauthorized: false,
-    },
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var mailer_exports = {};
+__export(mailer_exports, {
+  default: () => mailer_default
 });
-const sendMail = (to, subject, body, attachmentPath) => __awaiter(void 0, void 0, void 0, function* () {
-    const attachment = attachmentPath
-        ? {
-            filename: path_1.default.basename(attachmentPath),
-            content: fs_1.default.readFileSync(attachmentPath),
-            encoding: 'base64',
-        }
-        : undefined;
-    const mailOptions = {
-        from: `"Alexander Rodriguez" <${config_1.default.emailSender.email}>`,
-        to,
-        subject,
-        html: body,
-        attachments: attachment ? [attachment] : [],
-    };
-    yield transporter.sendMail(mailOptions);
+module.exports = __toCommonJS(mailer_exports);
+var import_nodemailer = __toESM(require("nodemailer"));
+var import_config = __toESM(require("../config"));
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+const transporter = import_nodemailer.default.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  // Use `true` for port 465, `false` for all other ports
+  auth: {
+    user: import_config.default.emailSender.email,
+    pass: import_config.default.emailSender.app_pass
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
-exports.default = sendMail;
+const sendMail = async (to, subject, body, attachmentPath) => {
+  const attachment = attachmentPath ? {
+    filename: import_path.default.basename(attachmentPath),
+    content: import_fs.default.readFileSync(attachmentPath),
+    encoding: "base64"
+  } : void 0;
+  const mailOptions = {
+    from: `"Alexander Rodriguez" <${import_config.default.emailSender.email}>`,
+    to,
+    subject,
+    html: body,
+    attachments: attachment ? [attachment] : []
+  };
+  await transporter.sendMail(mailOptions);
+};
+var mailer_default = sendMail;

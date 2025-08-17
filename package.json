@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "start": "node ./dist/server.js",
-    "build": "rm -rf dist && npx esbuild src/**/*.ts --outdir=dist --platform=node --target=node16 --format=cjs --sourcemap=false",
+    "build": "rm -rf dist && npx esbuild src/**/*.ts --outdir=dist --platform=node --target=node16 --format=cjs",
     "clean": "rm -rf dist",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
