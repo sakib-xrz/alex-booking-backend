@@ -17,9 +17,15 @@ const config_1 = __importDefault(require("../config"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const transporter = nodemailer_1.default.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
         user: config_1.default.emailSender.email,
         pass: config_1.default.emailSender.app_pass,
+    },
+    tls: {
+        rejectUnauthorized: false,
     },
 });
 const sendMail = (to, subject, body, attachmentPath) => __awaiter(void 0, void 0, void 0, function* () {
