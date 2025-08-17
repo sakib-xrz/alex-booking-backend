@@ -1,44 +1,16 @@
 "use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var auth_utils_exports = {};
-__export(auth_utils_exports, {
-  default: () => auth_utils_default
-});
-module.exports = __toCommonJS(auth_utils_exports);
-var import_jsonwebtoken = __toESM(require("jsonwebtoken"));
+Object.defineProperty(exports, "__esModule", { value: true });
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const CreateToken = (jwtPayload, secret, expiresIn) => {
-  return import_jsonwebtoken.default.sign(jwtPayload, secret, {
-    expiresIn
-  });
+    return jsonwebtoken_1.default.sign(jwtPayload, secret, {
+        expiresIn,
+    });
 };
 const VerifyToken = (token, secret) => {
-  return import_jsonwebtoken.default.verify(token, secret);
+    return jsonwebtoken_1.default.verify(token, secret);
 };
 const AuthUtils = { CreateToken, VerifyToken };
-var auth_utils_default = AuthUtils;
+exports.default = AuthUtils;

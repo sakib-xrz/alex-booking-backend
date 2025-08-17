@@ -1,84 +1,61 @@
 "use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var autoCancelPendingAppointments_exports = {};
-__export(autoCancelPendingAppointments_exports, {
-  scheduledAutoCancelPendingJobs: () => scheduledAutoCancelPendingJobs
-});
-module.exports = __toCommonJS(autoCancelPendingAppointments_exports);
-var import_date_fns = require("date-fns");
-var import_node_cron = __toESM(require("node-cron"));
-var import_prisma = __toESM(require("../../../utils/prisma"));
-const autoCancelPendingAppointments = async () => {
-  const fifteenMinutesAgo = (0, import_date_fns.subMinutes)(/* @__PURE__ */ new Date(), 15);
-  const pendingAppointments = await import_prisma.default.appointment.findMany({
-    where: {
-      created_at: {
-        lt: fifteenMinutesAgo
-      },
-      AND: {
-        status: "PENDING"
-      }
-    }
-  });
-  if (pendingAppointments.length > 0) {
-    await Promise.all(
-      pendingAppointments.map(async (appointment) => {
-        const result = await import_prisma.default.appointment.update({
-          data: {
-            status: "DELETED",
-            notes: "Appointment canceled automatically lack of payment!",
-            time_slot: {
-              update: {
-                status: "AVAILABLE"
-              }
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.scheduledAutoCancelPendingJobs = void 0;
+const date_fns_1 = require("date-fns");
+const node_cron_1 = __importDefault(require("node-cron"));
+const prisma_1 = __importDefault(require("../../../utils/prisma"));
+const autoCancelPendingAppointments = () => __awaiter(void 0, void 0, void 0, function* () {
+    const fifteenMinutesAgo = (0, date_fns_1.subMinutes)(new Date(), 15);
+    const pendingAppointments = yield prisma_1.default.appointment.findMany({
+        where: {
+            created_at: {
+                lt: fifteenMinutesAgo,
             },
-            payment: {
-              update: {
-                status: "DELETED"
-              }
-            }
-          },
-          where: {
-            id: appointment.id
-          }
-        });
-        return result;
-      })
-    );
-  }
-};
-const scheduledAutoCancelPendingJobs = () => {
-  import_node_cron.default.schedule("*/15 * * * *", async () => {
-    await autoCancelPendingAppointments();
-  });
-};
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  scheduledAutoCancelPendingJobs
+            AND: {
+                status: 'PENDING',
+            },
+        },
+    });
+    if (pendingAppointments.length > 0) {
+        yield Promise.all(pendingAppointments.map((appointment) => __awaiter(void 0, void 0, void 0, function* () {
+            const result = yield prisma_1.default.appointment.update({
+                data: {
+                    status: 'DELETED',
+                    notes: 'Appointment canceled automatically lack of payment!',
+                    time_slot: {
+                        update: {
+                            status: 'AVAILABLE',
+                        },
+                    },
+                    payment: {
+                        update: {
+                            status: 'DELETED',
+                        },
+                    },
+                },
+                where: {
+                    id: appointment.id,
+                },
+            });
+            return result;
+        })));
+    }
 });
+const scheduledAutoCancelPendingJobs = () => {
+    node_cron_1.default.schedule('*/15 * * * *', () => __awaiter(void 0, void 0, void 0, function* () {
+        yield autoCancelPendingAppointments();
+    }));
+};
+exports.scheduledAutoCancelPendingJobs = scheduledAutoCancelPendingJobs;

@@ -1,53 +1,47 @@
 "use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var import_app = __toESM(require("./app"));
-var import_config = __toESM(require("./app/config"));
-var import_autoCancelPendingAppointments = require("./app/modules/appointment/jobs/autoCancelPendingAppointments");
-process.on("uncaughtException", (err) => {
-  console.error(err);
-  process.exit(1);
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const app_1 = __importDefault(require("./app"));
+const config_1 = __importDefault(require("./app/config"));
+const autoCancelPendingAppointments_1 = require("./app/modules/appointment/jobs/autoCancelPendingAppointments");
+process.on('uncaughtException', (err) => {
+    console.error(err);
+    process.exit(1);
 });
 let server = null;
-async function startServer() {
-  server = import_app.default.listen(import_config.default.port, () => {
-    console.log(`\u{1F3AF} Server listening on port: ${import_config.default.port}`);
-  });
-  process.on("unhandledRejection", (error) => {
-    if (server) {
-      server.close(() => {
-        console.log(error);
-        process.exit(1);
-      });
-    } else {
-      process.exit(1);
-    }
-  });
+function startServer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        server = app_1.default.listen(config_1.default.port, () => {
+            console.log(`🎯 Server listening on port: ${config_1.default.port}`);
+        });
+        process.on('unhandledRejection', (error) => {
+            if (server) {
+                server.close(() => {
+                    console.log(error);
+                    process.exit(1);
+                });
+            }
+            else {
+                process.exit(1);
+            }
+        });
+    });
 }
-(0, import_autoCancelPendingAppointments.scheduledAutoCancelPendingJobs)();
+(0, autoCancelPendingAppointments_1.scheduledAutoCancelPendingJobs)();
 startServer();
-process.on("SIGTERM", () => {
-  if (server) {
-    server.close();
-  }
+process.on('SIGTERM', () => {
+    if (server) {
+        server.close();
+    }
 });

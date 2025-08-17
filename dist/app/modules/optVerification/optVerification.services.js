@@ -1,117 +1,87 @@
 "use strict";
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var optVerification_services_exports = {};
-__export(optVerification_services_exports, {
-  default: () => optVerification_services_default
-});
-module.exports = __toCommonJS(optVerification_services_exports);
-var import_date_fns = require("date-fns");
-var import_prisma = __toESM(require("../../utils/prisma"));
-var import_AppError = __toESM(require("../../errors/AppError"));
-var import_http_status = __toESM(require("http-status"));
-var import_mailer = __toESM(require("../../utils/mailer"));
-var import_optVerification = __toESM(require("./optVerification.utils"));
-var import_optVerification2 = require("./optVerification.constant");
-const CreateOpt = async ({ email }) => {
-  const existingOTPRecord = await import_prisma.default.emailOTPVerification.findFirst({
-    where: {
-      email
-    },
-    orderBy: {
-      created_at: "desc"
-    }
-  });
-  if (existingOTPRecord) {
-    const secondsSinceLastOTP = (0, import_date_fns.differenceInSeconds)(
-      /* @__PURE__ */ new Date(),
-      existingOTPRecord.created_at
-    );
-    if (secondsSinceLastOTP < import_optVerification2.OTP_RATE_LIMIT_SECONDS) {
-      const remainingTime = import_optVerification2.OTP_RATE_LIMIT_SECONDS - secondsSinceLastOTP;
-      throw new import_AppError.default(
-        import_http_status.default.TOO_MANY_REQUESTS,
-        `Please wait ${remainingTime} seconds before requesting a new OTP`
-      );
-    }
-  }
-  const otp = import_optVerification.default.generateOTP();
-  const expires_at = (0, import_date_fns.addMinutes)(/* @__PURE__ */ new Date(), import_optVerification2.OTP_EXPIRY_MINUTES);
-  const result = await import_prisma.default.emailOTPVerification.create({
-    data: {
-      email,
-      otp,
-      expires_at
-    }
-  });
-  try {
-    const emailTemplate = import_optVerification.default.createOTPEmailTemplate(otp);
-    await (0, import_mailer.default)(email, "Email Verification - Your OTP Code", emailTemplate);
-  } catch (error) {
-    console.log(error);
-    await import_prisma.default.emailOTPVerification.delete({
-      where: { id: result.id }
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-    throw new import_AppError.default(
-      import_http_status.default.INTERNAL_SERVER_ERROR,
-      "Failed to send OTP email. Please try again."
-    );
-  }
-  return {
-    email: result.email,
-    expires_at: result.expires_at,
-    is_verified: result.is_verified
-  };
 };
-const VerifyOpt = async ({ email, otp }) => {
-  const otpNumber = parseInt(otp, 10);
-  const isVerifiedEmail = await import_prisma.default.emailOTPVerification.findFirst({
-    where: {
-      email,
-      otp: otpNumber,
-      expires_at: { gt: /* @__PURE__ */ new Date() },
-      is_verified: false
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const date_fns_1 = require("date-fns");
+const prisma_1 = __importDefault(require("../../utils/prisma"));
+const AppError_1 = __importDefault(require("../../errors/AppError"));
+const http_status_1 = __importDefault(require("http-status"));
+const mailer_1 = __importDefault(require("../../utils/mailer"));
+const optVerification_utils_1 = __importDefault(require("./optVerification.utils"));
+const optVerification_constant_1 = require("./optVerification.constant");
+const CreateOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email }) {
+    const existingOTPRecord = yield prisma_1.default.emailOTPVerification.findFirst({
+        where: {
+            email,
+        },
+        orderBy: {
+            created_at: 'desc',
+        },
+    });
+    if (existingOTPRecord) {
+        const secondsSinceLastOTP = (0, date_fns_1.differenceInSeconds)(new Date(), existingOTPRecord.created_at);
+        if (secondsSinceLastOTP < optVerification_constant_1.OTP_RATE_LIMIT_SECONDS) {
+            const remainingTime = optVerification_constant_1.OTP_RATE_LIMIT_SECONDS - secondsSinceLastOTP;
+            throw new AppError_1.default(http_status_1.default.TOO_MANY_REQUESTS, `Please wait ${remainingTime} seconds before requesting a new OTP`);
+        }
     }
-  });
-  if (!isVerifiedEmail) {
-    throw new import_AppError.default(
-      import_http_status.default.BAD_REQUEST,
-      "Invalid OTP or OTP has expired"
-    );
-  }
-  const result = await import_prisma.default.emailOTPVerification.update({
-    where: { id: isVerifiedEmail.id },
-    data: { is_verified: true }
-  });
-  return {
-    email: result.email,
-    is_verified: result.is_verified
-  };
-};
+    const otp = optVerification_utils_1.default.generateOTP();
+    const expires_at = (0, date_fns_1.addMinutes)(new Date(), optVerification_constant_1.OTP_EXPIRY_MINUTES);
+    const result = yield prisma_1.default.emailOTPVerification.create({
+        data: {
+            email,
+            otp,
+            expires_at,
+        },
+    });
+    try {
+        const emailTemplate = optVerification_utils_1.default.createOTPEmailTemplate(otp);
+        yield (0, mailer_1.default)(email, 'Email Verification - Your OTP Code', emailTemplate);
+    }
+    catch (error) {
+        console.log(error);
+        yield prisma_1.default.emailOTPVerification.delete({
+            where: { id: result.id },
+        });
+        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to send OTP email. Please try again.');
+    }
+    return {
+        email: result.email,
+        expires_at: result.expires_at,
+        is_verified: result.is_verified,
+    };
+});
+const VerifyOpt = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email, otp }) {
+    const otpNumber = parseInt(otp, 10);
+    const isVerifiedEmail = yield prisma_1.default.emailOTPVerification.findFirst({
+        where: {
+            email,
+            otp: otpNumber,
+            expires_at: { gt: new Date() },
+            is_verified: false,
+        },
+    });
+    if (!isVerifiedEmail) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid OTP or OTP has expired');
+    }
+    const result = yield prisma_1.default.emailOTPVerification.update({
+        where: { id: isVerifiedEmail.id },
+        data: { is_verified: true },
+    });
+    return {
+        email: result.email,
+        is_verified: result.is_verified,
+    };
+});
 const OptVerificationService = { VerifyOpt, CreateOpt };
-var optVerification_services_default = OptVerificationService;
+exports.default = OptVerificationService;
