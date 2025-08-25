@@ -53,6 +53,10 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
         const businessTimeZone = data.timeZone || 'Asia/Dhaka';
         const localStartTime = (0, date_fns_tz_1.toZonedTime)(data.startDateTime, businessTimeZone);
         const localEndTime = (0, date_fns_tz_1.toZonedTime)(data.endDateTime, businessTimeZone);
+        console.log('=== GOOGLE CALENDAR DEBUG ===');
+        console.log('Received UTC times:', data.startDateTime.toISOString(), '-', data.endDateTime.toISOString());
+        console.log('Converted to local for display:', localStartTime.toLocaleString(), '-', localEndTime.toLocaleString());
+        console.log('Business timezone:', businessTimeZone);
         let formattedDate, formattedStartTime, formattedEndTime;
         try {
             formattedDate = (0, date_fns_1.format)(localStartTime, 'PPPP');

@@ -5,7 +5,6 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import GoogleCalendarService from '../google/googleCalendar.services';
-import { toZonedTime } from 'date-fns-tz';
 
 interface CreatePaymentIntentData {
   appointment_id: string;
@@ -325,9 +324,9 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
     }
 
     // Define your business timezone - make this configurable
-    const businessTimeZone = 'Asia/Dhaka'; // or get from config/database
+    const businessTimeZone = 'Asia/Dhaka';
 
-    // Get the appointment date (this is just the date part)
+    // Get the appointment date
     const appointmentDate = new Date(appointment.date);
 
     // Parse the time strings and create proper datetime objects in the business timezone
@@ -364,16 +363,35 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
       endHour = 0;
     }
 
-    // Create datetime objects in the business timezone
-    const startDateTime = new Date(appointmentDate);
-    startDateTime.setHours(startHour, startMinute, 0, 0);
+    // Create the date string in YYYY-MM-DD format
+    const year = appointmentDate.getFullYear();
+    const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(appointmentDate.getDate()).padStart(2, '0');
 
-    const endDateTime = new Date(appointmentDate);
-    endDateTime.setHours(endHour, endMinute, 0, 0);
+    // Create datetime strings in ISO format with explicit timezone offset
+    // Asia/Dhaka is UTC+6
+    const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
+    const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
 
-    // Convert to UTC for Google Calendar (Google Calendar API expects UTC)
-    const startDateTimeUTC = toZonedTime(startDateTime, businessTimeZone);
-    const endDateTimeUTC = toZonedTime(endDateTime, businessTimeZone);
+    // Now these are explicitly in Asia/Dhaka timezone and will be automatically converted to UTC
+    const startDateTimeUTC = new Date(startTimeStr);
+    const endDateTimeUTC = new Date(endTimeStr);
+
+    console.log('=== TIMEZONE DEBUG ===');
+    console.log(
+      'Original time slot:',
+      appointment.time_slot.start_time,
+      '-',
+      appointment.time_slot.end_time,
+    );
+    console.log('Created time strings:', startTimeStr, '-', endTimeStr);
+    console.log(
+      'Converted to UTC:',
+      startDateTimeUTC.toISOString(),
+      '-',
+      endDateTimeUTC.toISOString(),
+    );
+    console.log('Business timezone:', businessTimeZone);
 
     // Create Google Calendar event
     const calendarResult = await GoogleCalendarService.createCalendarEvent({

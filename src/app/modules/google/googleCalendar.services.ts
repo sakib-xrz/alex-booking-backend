@@ -74,9 +74,25 @@ const createCalendarEvent = async (data: CreateEventData) => {
     // Use the business timezone for formatting display dates
     const businessTimeZone = data.timeZone || 'Asia/Dhaka';
 
-    // Convert UTC times back to business timezone for display
+    // Convert UTC times back to business timezone for display in description
+    // data.startDateTime and data.endDateTime are already in UTC from payment service
     const localStartTime = toZonedTime(data.startDateTime, businessTimeZone);
     const localEndTime = toZonedTime(data.endDateTime, businessTimeZone);
+
+    console.log('=== GOOGLE CALENDAR DEBUG ===');
+    console.log(
+      'Received UTC times:',
+      data.startDateTime.toISOString(),
+      '-',
+      data.endDateTime.toISOString(),
+    );
+    console.log(
+      'Converted to local for display:',
+      localStartTime.toLocaleString(),
+      '-',
+      localEndTime.toLocaleString(),
+    );
+    console.log('Business timezone:', businessTimeZone);
 
     let formattedDate, formattedStartTime, formattedEndTime;
     try {
@@ -104,12 +120,12 @@ Appointment ID: ${data.appointmentId}
       summary: eventTitle,
       description: eventDescription,
       start: {
-        dateTime: data.startDateTime.toISOString(), // Already in UTC
-        timeZone: businessTimeZone, // This tells Google Calendar what timezone to display in
+        dateTime: data.startDateTime.toISOString(), // This is already UTC
+        timeZone: businessTimeZone, // This tells Google what timezone to display in
       },
       end: {
-        dateTime: data.endDateTime.toISOString(), // Already in UTC
-        timeZone: businessTimeZone, // This tells Google Calendar what timezone to display in
+        dateTime: data.endDateTime.toISOString(), // This is already UTC
+        timeZone: businessTimeZone, // This tells Google what timezone to display in
       },
       attendees: [
         {

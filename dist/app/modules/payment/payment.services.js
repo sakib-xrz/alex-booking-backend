@@ -18,7 +18,6 @@ const payment_utils_1 = require("./payment.utils");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const googleCalendar_services_1 = __importDefault(require("../google/googleCalendar.services"));
-const date_fns_tz_1 = require("date-fns-tz");
 const createPaymentIntent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const appointment = yield prisma_1.default.appointment.findUnique({
         where: { id: data.appointment_id },
@@ -275,12 +274,18 @@ const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, v
         else if (endPeriod === 'AM' && endHour === 12) {
             endHour = 0;
         }
-        const startDateTime = new Date(appointmentDate);
-        startDateTime.setHours(startHour, startMinute, 0, 0);
-        const endDateTime = new Date(appointmentDate);
-        endDateTime.setHours(endHour, endMinute, 0, 0);
-        const startDateTimeUTC = (0, date_fns_tz_1.toZonedTime)(startDateTime, businessTimeZone);
-        const endDateTimeUTC = (0, date_fns_tz_1.toZonedTime)(endDateTime, businessTimeZone);
+        const year = appointmentDate.getFullYear();
+        const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(appointmentDate.getDate()).padStart(2, '0');
+        const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
+        const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
+        const startDateTimeUTC = new Date(startTimeStr);
+        const endDateTimeUTC = new Date(endTimeStr);
+        console.log('=== TIMEZONE DEBUG ===');
+        console.log('Original time slot:', appointment.time_slot.start_time, '-', appointment.time_slot.end_time);
+        console.log('Created time strings:', startTimeStr, '-', endTimeStr);
+        console.log('Converted to UTC:', startDateTimeUTC.toISOString(), '-', endDateTimeUTC.toISOString());
+        console.log('Business timezone:', businessTimeZone);
         const calendarResult = yield googleCalendar_services_1.default.createCalendarEvent({
             appointmentId: appointment.id,
             counselorId: appointment.counselor_id,
