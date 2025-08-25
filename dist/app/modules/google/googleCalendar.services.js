@@ -48,7 +48,7 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
             return null;
         }
         const calendar = yield google_services_1.default.getCalendarClient(data.counselorId);
-        const eventTitle = `Counseling Session - ${data.clientName}`;
+        const eventTitle = `Counselling Session - ${data.clientName}`;
         let formattedDate, formattedStartTime, formattedEndTime;
         try {
             formattedDate = (0, date_fns_1.format)(data.startDateTime, 'PPPP');
@@ -59,7 +59,7 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
             throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Failed to format dates: ${error instanceof Error ? error.message : String(error)}`);
         }
         const eventDescription = `
-Counseling session with ${data.clientName}
+Counselling session with ${data.clientName}
 Date: ${formattedDate}
 Time: ${formattedStartTime} - ${formattedEndTime}
 Session Type: ${appointment.session_type}
@@ -72,11 +72,11 @@ Appointment ID: ${data.appointmentId}
             description: eventDescription,
             start: {
                 dateTime: data.startDateTime.toISOString(),
-                timeZone: data.timeZone || 'Australia/Sydney',
+                timeZone: 'Australia/Sydney',
             },
             end: {
                 dateTime: data.endDateTime.toISOString(),
-                timeZone: data.timeZone || 'Australia/Sydney',
+                timeZone: 'Australia/Sydney',
             },
             attendees: [
                 {

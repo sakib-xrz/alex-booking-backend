@@ -62,7 +62,7 @@ const createPaymentIntent = (data) => __awaiter(void 0, void 0, void 0, function
                 client_id: appointment.client_id,
             },
             receipt_email: appointment.client.email,
-            description: `Counseling session payment - ${appointment.date.toISOString().split('T')[0]}`,
+            description: `Counselling session payment - ${appointment.date.toISOString().split('T')[0]}`,
         });
         let payment;
         if (existingPayment) {
