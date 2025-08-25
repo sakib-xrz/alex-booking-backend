@@ -68,7 +68,7 @@ const createCalendarEvent = async (data: CreateEventData) => {
     );
 
     // Create event details
-    const eventTitle = `Counseling Session - ${data.clientName}`;
+    const eventTitle = `Counselling Session - ${data.clientName}`;
 
     let formattedDate, formattedStartTime, formattedEndTime;
     try {
@@ -83,7 +83,7 @@ const createCalendarEvent = async (data: CreateEventData) => {
     }
 
     const eventDescription = `
-Counseling session with ${data.clientName}
+Counselling session with ${data.clientName}
 Date: ${formattedDate}
 Time: ${formattedStartTime} - ${formattedEndTime}
 Session Type: ${appointment.session_type}
@@ -97,11 +97,11 @@ Appointment ID: ${data.appointmentId}
       description: eventDescription,
       start: {
         dateTime: data.startDateTime.toISOString(),
-        timeZone: data.timeZone || 'Australia/Sydney',
+        timeZone: 'Australia/Sydney',
       },
       end: {
         dateTime: data.endDateTime.toISOString(),
-        timeZone: data.timeZone || 'Australia/Sydney',
+        timeZone: 'Australia/Sydney',
       },
       attendees: [
         {
