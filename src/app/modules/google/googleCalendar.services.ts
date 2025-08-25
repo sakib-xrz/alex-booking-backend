@@ -4,6 +4,7 @@ import prisma from '../../utils/prisma';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 interface CreateEventData {
   appointmentId: string;
@@ -70,11 +71,18 @@ const createCalendarEvent = async (data: CreateEventData) => {
     // Create event details
     const eventTitle = `Counselling Session - ${data.clientName}`;
 
+    // Use the business timezone for formatting display dates
+    const businessTimeZone = data.timeZone || 'Asia/Dhaka';
+
+    // Convert UTC times back to business timezone for display
+    const localStartTime = toZonedTime(data.startDateTime, businessTimeZone);
+    const localEndTime = toZonedTime(data.endDateTime, businessTimeZone);
+
     let formattedDate, formattedStartTime, formattedEndTime;
     try {
-      formattedDate = format(data.startDateTime, 'PPPP');
-      formattedStartTime = format(data.startDateTime, 'p');
-      formattedEndTime = format(data.endDateTime, 'p');
+      formattedDate = format(localStartTime, 'PPPP');
+      formattedStartTime = format(localStartTime, 'p');
+      formattedEndTime = format(localEndTime, 'p');
     } catch (error) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -85,7 +93,7 @@ const createCalendarEvent = async (data: CreateEventData) => {
     const eventDescription = `
 Counselling session with ${data.clientName}
 Date: ${formattedDate}
-Time: ${formattedStartTime} - ${formattedEndTime}
+Time: ${formattedStartTime} - ${formattedEndTime} (${businessTimeZone})
 Session Type: ${appointment.session_type}
 ${appointment.notes ? `Notes: ${appointment.notes}` : ''}
 
@@ -96,12 +104,12 @@ Appointment ID: ${data.appointmentId}
       summary: eventTitle,
       description: eventDescription,
       start: {
-        dateTime: data.startDateTime.toISOString(),
-        timeZone: data.timeZone,
+        dateTime: data.startDateTime.toISOString(), // Already in UTC
+        timeZone: businessTimeZone, // This tells Google Calendar what timezone to display in
       },
       end: {
-        dateTime: data.endDateTime.toISOString(),
-        timeZone: data.timeZone,
+        dateTime: data.endDateTime.toISOString(), // Already in UTC
+        timeZone: businessTimeZone, // This tells Google Calendar what timezone to display in
       },
       attendees: [
         {

@@ -18,7 +18,7 @@ const payment_utils_1 = require("./payment.utils");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const googleCalendar_services_1 = __importDefault(require("../google/googleCalendar.services"));
-const date_fns_1 = require("date-fns");
+const date_fns_tz_1 = require("date-fns-tz");
 const createPaymentIntent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const appointment = yield prisma_1.default.appointment.findUnique({
         where: { id: data.appointment_id },
@@ -250,32 +250,45 @@ const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, v
         if (!appointment) {
             throw new Error('Appointment not found');
         }
-        console.log('Appointment before parsing:', appointment);
-        const appointmentDate = appointment.date;
-        appointmentDate.setHours(0, 0, 0, 0);
-        const startTime = (0, date_fns_1.parse)(appointment.time_slot.start_time, 'h:mm a', appointmentDate);
-        const endTime = (0, date_fns_1.parse)(appointment.time_slot.end_time, 'h:mm a', appointmentDate);
-        console.log('Date parsing debug:', {
-            originalDate: appointment.date,
-            appointmentDate: appointmentDate,
-            startTimeString: appointment.time_slot.start_time,
-            endTimeString: appointment.time_slot.end_time,
-            parsedStartTime: startTime,
-            parsedEndTime: endTime,
-            isStartTimeValid: !isNaN(startTime.getTime()),
-            isEndTimeValid: !isNaN(endTime.getTime()),
-        });
-        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-            throw new Error(`Invalid date parsing: startTime=${startTime}, endTime=${endTime}, originalDate=${appointment.date}`);
+        const businessTimeZone = 'Asia/Dhaka';
+        const appointmentDate = new Date(appointment.date);
+        const startTimeMatch = appointment.time_slot.start_time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        const endTimeMatch = appointment.time_slot.end_time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (!startTimeMatch || !endTimeMatch) {
+            throw new Error('Invalid time format in time slot');
         }
+        let startHour = parseInt(startTimeMatch[1]);
+        const startMinute = parseInt(startTimeMatch[2]);
+        const startPeriod = startTimeMatch[3].toUpperCase();
+        if (startPeriod === 'PM' && startHour !== 12) {
+            startHour += 12;
+        }
+        else if (startPeriod === 'AM' && startHour === 12) {
+            startHour = 0;
+        }
+        let endHour = parseInt(endTimeMatch[1]);
+        const endMinute = parseInt(endTimeMatch[2]);
+        const endPeriod = endTimeMatch[3].toUpperCase();
+        if (endPeriod === 'PM' && endHour !== 12) {
+            endHour += 12;
+        }
+        else if (endPeriod === 'AM' && endHour === 12) {
+            endHour = 0;
+        }
+        const startDateTime = new Date(appointmentDate);
+        startDateTime.setHours(startHour, startMinute, 0, 0);
+        const endDateTime = new Date(appointmentDate);
+        endDateTime.setHours(endHour, endMinute, 0, 0);
+        const startDateTimeUTC = (0, date_fns_tz_1.toZonedTime)(startDateTime, businessTimeZone);
+        const endDateTimeUTC = (0, date_fns_tz_1.toZonedTime)(endDateTime, businessTimeZone);
         const calendarResult = yield googleCalendar_services_1.default.createCalendarEvent({
             appointmentId: appointment.id,
             counselorId: appointment.counselor_id,
             clientEmail: appointment.client.email,
             clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
-            startDateTime: startTime,
-            endDateTime: endTime,
-            timeZone: 'Asia/Dhaka',
+            startDateTime: startDateTimeUTC,
+            endDateTime: endDateTimeUTC,
+            timeZone: businessTimeZone,
         });
         if (calendarResult) {
             console.log(`Google Calendar event created for appointment ${appointmentId}`);

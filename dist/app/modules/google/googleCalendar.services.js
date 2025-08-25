@@ -17,6 +17,7 @@ const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const date_fns_1 = require("date-fns");
+const date_fns_tz_1 = require("date-fns-tz");
 const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     console.log('Creating Google Calendar event for appointment:', data);
@@ -49,11 +50,14 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
         }
         const calendar = yield google_services_1.default.getCalendarClient(data.counselorId);
         const eventTitle = `Counselling Session - ${data.clientName}`;
+        const businessTimeZone = data.timeZone || 'Asia/Dhaka';
+        const localStartTime = (0, date_fns_tz_1.toZonedTime)(data.startDateTime, businessTimeZone);
+        const localEndTime = (0, date_fns_tz_1.toZonedTime)(data.endDateTime, businessTimeZone);
         let formattedDate, formattedStartTime, formattedEndTime;
         try {
-            formattedDate = (0, date_fns_1.format)(data.startDateTime, 'PPPP');
-            formattedStartTime = (0, date_fns_1.format)(data.startDateTime, 'p');
-            formattedEndTime = (0, date_fns_1.format)(data.endDateTime, 'p');
+            formattedDate = (0, date_fns_1.format)(localStartTime, 'PPPP');
+            formattedStartTime = (0, date_fns_1.format)(localStartTime, 'p');
+            formattedEndTime = (0, date_fns_1.format)(localEndTime, 'p');
         }
         catch (error) {
             throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Failed to format dates: ${error instanceof Error ? error.message : String(error)}`);
@@ -61,7 +65,7 @@ const createCalendarEvent = (data) => __awaiter(void 0, void 0, void 0, function
         const eventDescription = `
 Counselling session with ${data.clientName}
 Date: ${formattedDate}
-Time: ${formattedStartTime} - ${formattedEndTime}
+Time: ${formattedStartTime} - ${formattedEndTime} (${businessTimeZone})
 Session Type: ${appointment.session_type}
 ${appointment.notes ? `Notes: ${appointment.notes}` : ''}
 
@@ -72,11 +76,11 @@ Appointment ID: ${data.appointmentId}
             description: eventDescription,
             start: {
                 dateTime: data.startDateTime.toISOString(),
-                timeZone: data.timeZone,
+                timeZone: businessTimeZone,
             },
             end: {
                 dateTime: data.endDateTime.toISOString(),
-                timeZone: data.timeZone,
+                timeZone: businessTimeZone,
             },
             attendees: [
                 {

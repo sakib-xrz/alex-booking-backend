@@ -5,7 +5,7 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import GoogleCalendarService from '../google/googleCalendar.services';
-import { parse } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 interface CreatePaymentIntentData {
   appointment_id: string;
@@ -324,41 +324,56 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
       throw new Error('Appointment not found');
     }
 
-    console.log('Appointment before parsing:', appointment);
+    // Define your business timezone - make this configurable
+    const businessTimeZone = 'Asia/Dhaka'; // or get from config/database
 
-    const appointmentDate = appointment.date;
-    // Ensure we have a valid date by setting it to the beginning of the day
-    appointmentDate.setHours(0, 0, 0, 0);
+    // Get the appointment date (this is just the date part)
+    const appointmentDate = new Date(appointment.date);
 
-    const startTime = parse(
-      appointment.time_slot.start_time,
-      'h:mm a',
-      appointmentDate,
+    // Parse the time strings and create proper datetime objects in the business timezone
+    const startTimeMatch = appointment.time_slot.start_time.match(
+      /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
     );
-    const endTime = parse(
-      appointment.time_slot.end_time,
-      'h:mm a',
-      appointmentDate,
+    const endTimeMatch = appointment.time_slot.end_time.match(
+      /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
     );
 
-    // Debug logging
-    console.log('Date parsing debug:', {
-      originalDate: appointment.date,
-      appointmentDate: appointmentDate,
-      startTimeString: appointment.time_slot.start_time,
-      endTimeString: appointment.time_slot.end_time,
-      parsedStartTime: startTime,
-      parsedEndTime: endTime,
-      isStartTimeValid: !isNaN(startTime.getTime()),
-      isEndTimeValid: !isNaN(endTime.getTime()),
-    });
-
-    // Validate dates before proceeding
-    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-      throw new Error(
-        `Invalid date parsing: startTime=${startTime}, endTime=${endTime}, originalDate=${appointment.date}`,
-      );
+    if (!startTimeMatch || !endTimeMatch) {
+      throw new Error('Invalid time format in time slot');
     }
+
+    // Parse start time
+    let startHour = parseInt(startTimeMatch[1]);
+    const startMinute = parseInt(startTimeMatch[2]);
+    const startPeriod = startTimeMatch[3].toUpperCase();
+
+    if (startPeriod === 'PM' && startHour !== 12) {
+      startHour += 12;
+    } else if (startPeriod === 'AM' && startHour === 12) {
+      startHour = 0;
+    }
+
+    // Parse end time
+    let endHour = parseInt(endTimeMatch[1]);
+    const endMinute = parseInt(endTimeMatch[2]);
+    const endPeriod = endTimeMatch[3].toUpperCase();
+
+    if (endPeriod === 'PM' && endHour !== 12) {
+      endHour += 12;
+    } else if (endPeriod === 'AM' && endHour === 12) {
+      endHour = 0;
+    }
+
+    // Create datetime objects in the business timezone
+    const startDateTime = new Date(appointmentDate);
+    startDateTime.setHours(startHour, startMinute, 0, 0);
+
+    const endDateTime = new Date(appointmentDate);
+    endDateTime.setHours(endHour, endMinute, 0, 0);
+
+    // Convert to UTC for Google Calendar (Google Calendar API expects UTC)
+    const startDateTimeUTC = toZonedTime(startDateTime, businessTimeZone);
+    const endDateTimeUTC = toZonedTime(endDateTime, businessTimeZone);
 
     // Create Google Calendar event
     const calendarResult = await GoogleCalendarService.createCalendarEvent({
@@ -366,9 +381,9 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
       counselorId: appointment.counselor_id,
       clientEmail: appointment.client.email,
       clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
-      startDateTime: startTime,
-      endDateTime: endTime,
-      timeZone: 'Asia/Dhaka', // Adjust based on your timezone
+      startDateTime: startDateTimeUTC,
+      endDateTime: endDateTimeUTC,
+      timeZone: businessTimeZone,
     });
 
     if (calendarResult) {
