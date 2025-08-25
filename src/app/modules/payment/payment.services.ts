@@ -368,7 +368,7 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
       clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
       startDateTime: startTime,
       endDateTime: endTime,
-      timeZone: 'Australia/Sydney', // Adjust based on your timezone
+      timeZone: 'Asia/Dhaka', // Adjust based on your timezone
     });
 
     if (calendarResult) {

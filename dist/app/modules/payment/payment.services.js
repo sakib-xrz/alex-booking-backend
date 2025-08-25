@@ -275,7 +275,7 @@ const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, v
             clientName: `${appointment.client.first_name} ${appointment.client.last_name}`,
             startDateTime: startTime,
             endDateTime: endTime,
-            timeZone: 'Australia/Sydney',
+            timeZone: 'Asia/Dhaka',
         });
         if (calendarResult) {
             console.log(`Google Calendar event created for appointment ${appointmentId}`);

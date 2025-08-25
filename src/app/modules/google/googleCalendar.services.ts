@@ -97,11 +97,11 @@ Appointment ID: ${data.appointmentId}
       description: eventDescription,
       start: {
         dateTime: data.startDateTime.toISOString(),
-        timeZone: 'Australia/Sydney',
+        timeZone: data.timeZone,
       },
       end: {
         dateTime: data.endDateTime.toISOString(),
-        timeZone: 'Australia/Sydney',
+        timeZone: data.timeZone,
       },
       attendees: [
         {
