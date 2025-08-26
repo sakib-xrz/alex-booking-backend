@@ -103,9 +103,9 @@ model TimeSlot {
   updated_at  DateTime    @updatedAt
 
   // Relations
-  calendar    Calendar     @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
+  calendar     Calendar      @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
   // room        Room?        @relation(fields: [room_id], references: [id])
-  appointment Appointment?
+  appointments Appointment[]
 
   @@index([calendar_id, start_time, end_time])
   @@index([status])
@@ -154,7 +154,7 @@ model Appointment {
   id           String            @id @default(uuid())
   client_id    String
   counselor_id String
-  time_slot_id String            @unique
+  time_slot_id String
   session_type SessionType
   date         DateTime          @db.Date
   notes        String?
