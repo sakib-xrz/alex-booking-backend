@@ -159,6 +159,7 @@ model Appointment {
   date         DateTime          @db.Date
   notes        String?
   status       AppointmentStatus @default(PENDING)
+  event_id     String? // Google Calendar event ID
   created_at   DateTime          @default(now())
   updated_at   DateTime          @updatedAt
 

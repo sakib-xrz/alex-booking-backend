@@ -31,7 +31,16 @@ const getAppointmentsQuerySchema = zod_1.z.object({
     params: zod_1.z.object({}).optional(),
     cookies: zod_1.z.object({}).optional(),
 });
+const cancelAppointmentSchema = zod_1.z.object({
+    params: zod_1.z.object({
+        appointmentId: zod_1.z.string().uuid('Invalid appointment ID format'),
+    }),
+    body: zod_1.z.object({}).optional(),
+    query: zod_1.z.object({}).optional(),
+    cookies: zod_1.z.object({}).optional(),
+});
 const AppointmentValidation = {
     getAppointmentsQuerySchema,
+    cancelAppointmentSchema,
 };
 exports.default = AppointmentValidation;

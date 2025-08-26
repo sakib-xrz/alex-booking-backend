@@ -22,5 +22,10 @@ router.patch(
   '/:appointmentId/completed',
   AppointmentController.CompleteCounselorAppointmentById,
 );
+router.patch(
+  '/:appointmentId/cancel',
+  validateRequest(AppointmentValidation.cancelAppointmentSchema),
+  AppointmentController.CancelCounselorAppointmentById,
+);
 
 export const AppointmentRoutes = router;

@@ -28,7 +28,21 @@ const auth = (...roles) => {
         if (!token) {
             throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, "You're not authorized to access this route");
         }
-        const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_token_secret);
+        let decoded;
+        try {
+            decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_token_secret);
+        }
+        catch (error) {
+            if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+                if (error.name === 'TokenExpiredError') {
+                    throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Token has expired. Please login again.');
+                }
+                else if (error.name === 'JsonWebTokenError') {
+                    throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Invalid token. Please login again.');
+                }
+            }
+            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Authentication failed. Please login again.');
+        }
         const { email } = decoded;
         const user = yield prisma_1.default.user.findUnique({
             where: { email, is_deleted: false },

@@ -409,6 +409,16 @@ const createGoogleCalendarEvent = async (appointmentId: string) => {
         `Google Calendar event created for appointment ${appointmentId}`,
       );
       console.log(`Meeting link: ${calendarResult.meetingLink}`);
+
+      // Update appointment with event_id
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { event_id: calendarResult.eventId },
+      });
+
+      console.log(
+        `Event ID ${calendarResult.eventId} stored in appointment record`,
+      );
     }
 
     return calendarResult;

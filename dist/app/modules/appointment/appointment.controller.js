@@ -52,9 +52,19 @@ const CompleteCounselorAppointmentById = (0, catchAsync_1.default)((req, res) =>
         data: result,
     });
 }));
+const CancelCounselorAppointmentById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield appointment_services_1.default.CancelAppointmentById(req.params.appointmentId, req.user.id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Appointment cancelled successfully',
+        data: result,
+    });
+}));
 const AppointmentController = {
     GetCounselorAppointments,
     GetCounselorAppointmentDetailsById,
     CompleteCounselorAppointmentById,
+    CancelCounselorAppointmentById,
 };
 exports.default = AppointmentController;

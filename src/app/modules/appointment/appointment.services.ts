@@ -4,6 +4,9 @@ import calculatePagination, {
 } from '../../utils/pagination';
 import { appointmentSearchableFields } from './appointment.constant';
 import { Prisma } from '@prisma/client';
+import GoogleCalendarService from '../google/googleCalendar.services';
+import AppError from '../../errors/AppError';
+import httpStatus from 'http-status';
 
 interface IAppointmentFilters {
   search?: string;
@@ -205,10 +208,97 @@ const CompleteAppointmentById = async (id: string) => {
   return appointment;
 };
 
+const CancelAppointmentById = async (id: string, counselorId: string) => {
+  // Start a database transaction
+  return await prisma.$transaction(async (tx) => {
+    // 1. Get appointment details first to validate and get necessary IDs
+    const appointment = await tx.appointment.findUnique({
+      where: { id },
+      include: {
+        time_slot: true,
+        counselor: true,
+        meeting: true,
+      },
+    });
+
+    if (!appointment) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Appointment not found');
+    }
+
+    // Verify that the appointment belongs to the counselor
+    if (appointment.counselor_id !== counselorId) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        'You are not authorized to cancel this appointment',
+      );
+    }
+
+    // Check if appointment can be cancelled
+    if (appointment.status === 'CANCELLED') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Appointment is already cancelled',
+      );
+    }
+
+    if (appointment.status === 'COMPLETED') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Cannot cancel a completed appointment',
+      );
+    }
+
+    try {
+      // 2. Update TimeSlot status to AVAILABLE
+      await tx.timeSlot.update({
+        where: { id: appointment.time_slot_id },
+        data: { status: 'AVAILABLE' },
+      });
+
+      // 3. Update Appointment status to CANCELLED
+      const updatedAppointment = await tx.appointment.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      });
+
+      // 4. Delete meeting entry if exists
+      if (appointment.meeting) {
+        await tx.meeting.delete({
+          where: { id: appointment.meeting.id },
+        });
+      }
+
+      // 5. Cancel Google Calendar event if event_id exists
+      // Note: This is done outside the transaction since it's an external API call
+      if (appointment.event_id) {
+        try {
+          await GoogleCalendarService.cancelCalendarEvent(
+            appointment.event_id,
+            counselorId,
+          );
+        } catch (calendarError) {
+          console.error(
+            'Failed to cancel Google Calendar event:',
+            calendarError,
+          );
+          // We don't throw here because the database operations should succeed
+          // even if calendar cancellation fails
+        }
+      }
+
+      return updatedAppointment;
+    } catch (error) {
+      console.error('Error during appointment cancellation:', error);
+      throw error;
+    }
+  });
+};
+
 const AppointmentService = {
   GetCounselorAppointmentsById,
   GetCounselorAppointmentDetailsById,
   CompleteAppointmentById,
+  CancelAppointmentById,
 };
 
 export default AppointmentService;

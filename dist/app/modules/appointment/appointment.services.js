@@ -15,6 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const pagination_1 = __importDefault(require("../../utils/pagination"));
 const appointment_constant_1 = require("./appointment.constant");
+const googleCalendar_services_1 = __importDefault(require("../google/googleCalendar.services"));
+const AppError_1 = __importDefault(require("../../errors/AppError"));
+const http_status_1 = __importDefault(require("http-status"));
 const GetCounselorAppointmentsById = (counselor_id, filters, paginationOptions) => __awaiter(void 0, void 0, void 0, function* () {
     const { page, limit, skip, sort_by, sort_order } = (0, pagination_1.default)(paginationOptions);
     const { search, session_type, status, date } = filters;
@@ -184,9 +187,62 @@ const CompleteAppointmentById = (id) => __awaiter(void 0, void 0, void 0, functi
     });
     return appointment;
 });
+const CancelAppointmentById = (id, counselorId) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const appointment = yield tx.appointment.findUnique({
+            where: { id },
+            include: {
+                time_slot: true,
+                counselor: true,
+                meeting: true,
+            },
+        });
+        if (!appointment) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+        }
+        if (appointment.counselor_id !== counselorId) {
+            throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to cancel this appointment');
+        }
+        if (appointment.status === 'CANCELLED') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Appointment is already cancelled');
+        }
+        if (appointment.status === 'COMPLETED') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Cannot cancel a completed appointment');
+        }
+        try {
+            yield tx.timeSlot.update({
+                where: { id: appointment.time_slot_id },
+                data: { status: 'AVAILABLE' },
+            });
+            const updatedAppointment = yield tx.appointment.update({
+                where: { id },
+                data: { status: 'CANCELLED' },
+            });
+            if (appointment.meeting) {
+                yield tx.meeting.delete({
+                    where: { id: appointment.meeting.id },
+                });
+            }
+            if (appointment.event_id) {
+                try {
+                    yield googleCalendar_services_1.default.cancelCalendarEvent(appointment.event_id, counselorId);
+                }
+                catch (calendarError) {
+                    console.error('Failed to cancel Google Calendar event:', calendarError);
+                }
+            }
+            return updatedAppointment;
+        }
+        catch (error) {
+            console.error('Error during appointment cancellation:', error);
+            throw error;
+        }
+    }));
+});
 const AppointmentService = {
     GetCounselorAppointmentsById,
     GetCounselorAppointmentDetailsById,
     CompleteAppointmentById,
+    CancelAppointmentById,
 };
 exports.default = AppointmentService;

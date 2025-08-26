@@ -55,10 +55,25 @@ const CompleteCounselorAppointmentById = catchAsync(async (req, res) => {
   });
 });
 
+const CancelCounselorAppointmentById = catchAsync(async (req, res) => {
+  const result = await AppointmentService.CancelAppointmentById(
+    req.params.appointmentId,
+    req.user.id,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Appointment cancelled successfully',
+    data: result,
+  });
+});
+
 const AppointmentController = {
   GetCounselorAppointments,
   GetCounselorAppointmentDetailsById,
   CompleteCounselorAppointmentById,
+  CancelCounselorAppointmentById,
 };
 
 export default AppointmentController;

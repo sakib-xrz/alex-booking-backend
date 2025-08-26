@@ -28,10 +28,34 @@ const auth = (...roles: Role[]) => {
         );
       }
 
-      const decoded = jwt.verify(
-        token,
-        config.jwt_access_token_secret as string,
-      ) as JwtPayload;
+      let decoded: JwtPayload;
+
+      try {
+        decoded = jwt.verify(
+          token,
+          config.jwt_access_token_secret as string,
+        ) as JwtPayload;
+      } catch (error) {
+        // Handle JWT-specific errors
+        if (error instanceof jwt.JsonWebTokenError) {
+          if (error.name === 'TokenExpiredError') {
+            throw new AppError(
+              httpStatus.UNAUTHORIZED,
+              'Token has expired. Please login again.',
+            );
+          } else if (error.name === 'JsonWebTokenError') {
+            throw new AppError(
+              httpStatus.UNAUTHORIZED,
+              'Invalid token. Please login again.',
+            );
+          }
+        }
+
+        throw new AppError(
+          httpStatus.UNAUTHORIZED,
+          'Authentication failed. Please login again.',
+        );
+      }
 
       const { email } = decoded;
 

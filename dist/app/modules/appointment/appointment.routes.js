@@ -15,4 +15,5 @@ router.use((0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELO
 router.get('/', (0, validateRequest_1.default)(appointment_validation_1.default.getAppointmentsQuerySchema), appointment_controller_1.default.GetCounselorAppointments);
 router.get('/:appointmentId', appointment_controller_1.default.GetCounselorAppointmentDetailsById);
 router.patch('/:appointmentId/completed', appointment_controller_1.default.CompleteCounselorAppointmentById);
+router.patch('/:appointmentId/cancel', (0, validateRequest_1.default)(appointment_validation_1.default.cancelAppointmentSchema), appointment_controller_1.default.CancelCounselorAppointmentById);
 exports.AppointmentRoutes = router;

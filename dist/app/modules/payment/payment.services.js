@@ -298,6 +298,11 @@ const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, v
         if (calendarResult) {
             console.log(`Google Calendar event created for appointment ${appointmentId}`);
             console.log(`Meeting link: ${calendarResult.meetingLink}`);
+            yield prisma_1.default.appointment.update({
+                where: { id: appointmentId },
+                data: { event_id: calendarResult.eventId },
+            });
+            console.log(`Event ID ${calendarResult.eventId} stored in appointment record`);
         }
         return calendarResult;
     }
