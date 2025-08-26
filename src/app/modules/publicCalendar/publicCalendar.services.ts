@@ -65,25 +65,6 @@ const GetCounselorDateSlots = async (
 
   const slots = await prisma.timeSlot.findMany({
     where,
-    // select: {
-    //   id: true,
-    //   start_time: true,
-    //   end_time: true,
-    //   type: true,
-    //   status: true,
-    //   calendar: {
-    //     select: {
-    //       date: true,
-    //       counselor: {
-    //         select: {
-    //           id: true,
-    //           name: true,
-    //           profile_picture: true,
-    //         },
-    //       },
-    //     },
-    //   },
-    // },
   });
 
   const sortedSlots = slots.sort((a, b) => {
