@@ -40,9 +40,21 @@ const cancelAppointmentSchema = z.object({
   cookies: z.object({}).optional(),
 });
 
+const rescheduleAppointmentSchema = z.object({
+  params: z.object({
+    appointmentId: z.string().uuid('Invalid appointment ID format'),
+  }),
+  body: z.object({
+    newTimeSlotId: z.string().uuid('Invalid time slot ID format'),
+  }),
+  query: z.object({}).optional(),
+  cookies: z.object({}).optional(),
+});
+
 const AppointmentValidation = {
   getAppointmentsQuerySchema,
   cancelAppointmentSchema,
+  rescheduleAppointmentSchema,
 };
 
 export default AppointmentValidation;

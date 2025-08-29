@@ -230,10 +230,122 @@ const getCalendarEvent = (eventId, counselorId) => __awaiter(void 0, void 0, voi
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Failed to get Google Calendar event');
     }
 });
+const rescheduleCalendarEvent = (eventId, counselorId, data) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Rescheduling Google Calendar event:', eventId, data);
+    if (!data.startDateTime ||
+        !data.endDateTime ||
+        isNaN(data.startDateTime.getTime()) ||
+        isNaN(data.endDateTime.getTime())) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Invalid date values: startDateTime=${data.startDateTime}, endDateTime=${data.endDateTime}`);
+    }
+    try {
+        const appointment = yield prisma_1.default.appointment.findUnique({
+            where: { id: data.appointmentId },
+            include: {
+                client: true,
+                counselor: true,
+                time_slot: {
+                    include: {
+                        calendar: true,
+                    },
+                },
+            },
+        });
+        if (!appointment) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+        }
+        const isConnected = yield google_services_1.default.isCalendarConnected(counselorId);
+        if (!isConnected) {
+            console.warn(`Google Calendar not connected for counselor ${counselorId}`);
+            return null;
+        }
+        const calendar = yield google_services_1.default.getCalendarClient(counselorId);
+        const eventTitle = `Counselling Session - ${data.clientName}`;
+        const businessTimeZone = data.timeZone || 'Asia/Dhaka';
+        const localStartTime = (0, date_fns_tz_1.toZonedTime)(data.startDateTime, businessTimeZone);
+        const localEndTime = (0, date_fns_tz_1.toZonedTime)(data.endDateTime, businessTimeZone);
+        console.log('=== GOOGLE CALENDAR RESCHEDULE DEBUG ===');
+        console.log('New UTC times:', data.startDateTime.toISOString(), '-', data.endDateTime.toISOString());
+        console.log('Converted to local for display:', localStartTime.toLocaleString(), '-', localEndTime.toLocaleString());
+        let formattedDate, formattedStartTime, formattedEndTime;
+        try {
+            formattedDate = (0, date_fns_1.format)(localStartTime, 'PPPP');
+            formattedStartTime = (0, date_fns_1.format)(localStartTime, 'p');
+            formattedEndTime = (0, date_fns_1.format)(localEndTime, 'p');
+        }
+        catch (error) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, `Failed to format dates: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        const eventDescription = `
+Counselling session with ${data.clientName} (RESCHEDULED)
+Date: ${formattedDate}
+Time: ${formattedStartTime} - ${formattedEndTime} (${businessTimeZone})
+Session Type: ${appointment.session_type}
+${appointment.notes ? `Notes: ${appointment.notes}` : ''}
+
+Appointment ID: ${data.appointmentId}
+    `.trim();
+        const eventUpdates = {
+            summary: eventTitle,
+            description: eventDescription,
+            start: {
+                dateTime: data.startDateTime.toISOString(),
+                timeZone: businessTimeZone,
+            },
+            end: {
+                dateTime: data.endDateTime.toISOString(),
+                timeZone: businessTimeZone,
+            },
+            attendees: [
+                {
+                    email: appointment.counselor.email,
+                    displayName: appointment.counselor.name,
+                    responseStatus: 'accepted',
+                    organizer: true,
+                },
+                {
+                    email: data.clientEmail,
+                    displayName: data.clientName,
+                    responseStatus: 'needsAction',
+                    optional: false,
+                },
+            ],
+        };
+        const response = yield calendar.events.patch({
+            calendarId: 'primary',
+            eventId: eventId,
+            requestBody: eventUpdates,
+            sendUpdates: 'all',
+            sendNotifications: true,
+        });
+        const updatedEvent = response.data;
+        console.log(`Google Calendar event rescheduled successfully for appointment ${data.appointmentId}`);
+        console.log(`Event ID: ${updatedEvent.id}`);
+        console.log(`Event HTML Link: ${updatedEvent.htmlLink}`);
+        return {
+            eventId: updatedEvent.id,
+            htmlLink: updatedEvent.htmlLink,
+        };
+    }
+    catch (error) {
+        console.error('Error rescheduling Google Calendar event:', error);
+        if (error instanceof Error && 'code' in error) {
+            const googleError = error;
+            if (googleError.code === 401) {
+                throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Google Calendar access expired. Please reconnect your calendar.');
+            }
+            else if (googleError.code === 403) {
+                throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'Insufficient permissions for Google Calendar. Please reconnect with proper permissions.');
+            }
+        }
+        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, `Failed to reschedule Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+});
 const GoogleCalendarService = {
     createCalendarEvent,
     updateCalendarEvent,
     cancelCalendarEvent,
     getCalendarEvent,
+    rescheduleCalendarEvent,
 };
 exports.default = GoogleCalendarService;

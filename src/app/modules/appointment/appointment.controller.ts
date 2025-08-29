@@ -69,11 +69,29 @@ const CancelCounselorAppointmentById = catchAsync(async (req, res) => {
   });
 });
 
+const RescheduleCounselorAppointmentById = catchAsync(async (req, res) => {
+  const { newTimeSlotId } = req.body;
+
+  const result = await AppointmentService.RescheduleAppointmentById(
+    req.params.appointmentId,
+    req.user.id,
+    newTimeSlotId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Appointment rescheduled successfully',
+    data: result,
+  });
+});
+
 const AppointmentController = {
   GetCounselorAppointments,
   GetCounselorAppointmentDetailsById,
   CompleteCounselorAppointmentById,
   CancelCounselorAppointmentById,
+  RescheduleCounselorAppointmentById,
 };
 
 export default AppointmentController;
