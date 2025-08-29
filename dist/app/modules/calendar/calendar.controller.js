@@ -53,10 +53,30 @@ const PostDateSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
+const PostSlotsWithCalendarDate = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield calendar_services_1.default.CreateSlotsWithCalendarDate(req.user.id, req.body);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.CREATED,
+        message: 'Calendar slots created successfully',
+        data: result,
+    });
+}));
+const GetSlotsWithCalendarDate = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield calendar_services_1.default.GetSlotsWithCalendarDate(req.user.id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.CREATED,
+        message: 'Calendar slots created successfully',
+        data: result,
+    });
+}));
 const CalendarController = {
     GetCalendar,
     PostCalendarDate,
     GetDateSlots,
     PostDateSlots,
+    PostSlotsWithCalendarDate,
+    GetSlotsWithCalendarDate,
 };
 exports.default = CalendarController;
