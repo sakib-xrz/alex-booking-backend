@@ -66,8 +66,13 @@ const GetSlotsWithCalendarDate = (0, catchAsync_1.default)((req, res) => __await
     const result = yield calendar_services_1.default.GetSlotsWithCalendarDate(req.user.id);
     (0, sendResponse_1.default)(res, {
         success: true,
+<<<<<<< HEAD
         statusCode: http_status_1.default.OK,
         message: 'Calendar slots got successfully',
+=======
+        statusCode: http_status_1.default.CREATED,
+        message: 'Calendar slots created successfully',
+>>>>>>> fe0fe0fe0e9dd77aecf8b819ad4bcd5a69333c18
         data: result,
     });
 }));

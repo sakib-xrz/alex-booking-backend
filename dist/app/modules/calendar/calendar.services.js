@@ -85,6 +85,10 @@ const CreateDateSlots = (calendarId, slots) => __awaiter(void 0, void 0, void 0,
     return result;
 });
 const CreateSlotsWithCalendarDate = (counselorId, slots) => __awaiter(void 0, void 0, void 0, function* () {
+<<<<<<< HEAD
+=======
+    console.log(counselorId, slots);
+>>>>>>> fe0fe0fe0e9dd77aecf8b819ad4bcd5a69333c18
     const result = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         const allSlots = [];
         for (const day of slots.data) {
@@ -116,6 +120,10 @@ const CreateSlotsWithCalendarDate = (counselorId, slots) => __awaiter(void 0, vo
                 });
             }
         }
+<<<<<<< HEAD
+=======
+        console.log(allSlots);
+>>>>>>> fe0fe0fe0e9dd77aecf8b819ad4bcd5a69333c18
         const createdSlots = yield tx.timeSlot.createMany({
             data: allSlots,
             skipDuplicates: true,
@@ -125,11 +133,15 @@ const CreateSlotsWithCalendarDate = (counselorId, slots) => __awaiter(void 0, vo
     return result;
 });
 const GetSlotsWithCalendarDate = (counselorId) => __awaiter(void 0, void 0, void 0, function* () {
+<<<<<<< HEAD
     const calendars = yield prisma_1.default.calendar.findMany({
         where: { counselor_id: counselorId },
         include: { time_slots: true },
     });
     return calendars;
+=======
+    return {};
+>>>>>>> fe0fe0fe0e9dd77aecf8b819ad4bcd5a69333c18
 });
 const CalendarService = {
     GetCalenders,

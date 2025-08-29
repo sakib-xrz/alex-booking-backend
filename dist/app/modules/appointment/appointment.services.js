@@ -240,7 +240,7 @@ const CancelAppointmentById = (id, counselorId) => __awaiter(void 0, void 0, voi
     }));
 });
 const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+    const txResult = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         const currentAppointment = yield tx.appointment.findUnique({
             where: { id: appointmentId },
             include: {
@@ -311,42 +311,75 @@ const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) =>
                     meeting: true,
                 },
             });
-            if (currentAppointment.event_id) {
-                try {
-                    const appointmentDate = new Date(newTimeSlot.calendar.date);
-                    const [startHour, startMinute] = newTimeSlot.start_time
-                        .split(':')
-                        .map(Number);
-                    const [endHour, endMinute] = newTimeSlot.end_time
-                        .split(':')
-                        .map(Number);
-                    const startDateTime = new Date(appointmentDate);
-                    startDateTime.setHours(startHour, startMinute, 0, 0);
-                    const endDateTime = new Date(appointmentDate);
-                    endDateTime.setHours(endHour, endMinute, 0, 0);
-                    const businessTimeZone = 'Asia/Dhaka';
-                    const utcStartTime = new Date(startDateTime.getTime() - startDateTime.getTimezoneOffset() * 60000);
-                    const utcEndTime = new Date(endDateTime.getTime() - endDateTime.getTimezoneOffset() * 60000);
-                    yield googleCalendar_services_1.default.rescheduleCalendarEvent(currentAppointment.event_id, counselorId, {
-                        appointmentId: appointmentId,
-                        clientEmail: currentAppointment.client.email,
-                        clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
-                        startDateTime: utcStartTime,
-                        endDateTime: utcEndTime,
-                        timeZone: businessTimeZone,
-                    });
-                }
-                catch (calendarError) {
-                    console.error('Failed to reschedule Google Calendar event:', calendarError);
-                }
-            }
-            return updatedAppointment;
+            return {
+                updatedAppointment,
+                eventId: currentAppointment.event_id,
+                appointmentDate: newTimeSlot.calendar.date,
+                startTimeText: newTimeSlot.start_time,
+                endTimeText: newTimeSlot.end_time,
+                clientEmail: currentAppointment.client.email,
+                clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
+            };
         }
         catch (error) {
             console.error('Error during appointment rescheduling:', error);
             throw error;
         }
     }));
+    const { updatedAppointment, eventId, appointmentDate, startTimeText, endTimeText, clientEmail, clientName, } = txResult;
+    if (eventId) {
+        try {
+            const businessTimeZone = 'Asia/Dhaka';
+            const appointmentDateObj = new Date(appointmentDate);
+            const startTimeMatch = startTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            const endTimeMatch = endTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if (!startTimeMatch || !endTimeMatch) {
+                throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid time format in time slot');
+            }
+            let startHour = parseInt(startTimeMatch[1]);
+            const startMinute = parseInt(startTimeMatch[2]);
+            const startPeriod = startTimeMatch[3].toUpperCase();
+            if (startPeriod === 'PM' && startHour !== 12) {
+                startHour += 12;
+            }
+            else if (startPeriod === 'AM' && startHour === 12) {
+                startHour = 0;
+            }
+            let endHour = parseInt(endTimeMatch[1]);
+            const endMinute = parseInt(endTimeMatch[2]);
+            const endPeriod = endTimeMatch[3].toUpperCase();
+            if (endPeriod === 'PM' && endHour !== 12) {
+                endHour += 12;
+            }
+            else if (endPeriod === 'AM' && endHour === 12) {
+                endHour = 0;
+            }
+            const year = appointmentDateObj.getFullYear();
+            const month = String(appointmentDateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(appointmentDateObj.getDate()).padStart(2, '0');
+            const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
+            const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
+            const utcStartTime = new Date(startTimeStr);
+            const utcEndTime = new Date(endTimeStr);
+            console.log('=== RESCHEDULE TIMEZONE DEBUG ===');
+            console.log('Original time slot:', startTimeText, '-', endTimeText);
+            console.log('Created time strings:', startTimeStr, '-', endTimeStr);
+            console.log('Converted to UTC:', utcStartTime.toISOString(), '-', utcEndTime.toISOString());
+            console.log('Business timezone:', businessTimeZone);
+            yield googleCalendar_services_1.default.rescheduleCalendarEvent(eventId, counselorId, {
+                appointmentId,
+                clientEmail,
+                clientName,
+                startDateTime: utcStartTime,
+                endDateTime: utcEndTime,
+                timeZone: businessTimeZone,
+            });
+        }
+        catch (calendarError) {
+            console.error('Failed to reschedule Google Calendar event:', calendarError);
+        }
+    }
+    return updatedAppointment;
 });
 const AppointmentService = {
     GetCounselorAppointmentsById,
