@@ -95,11 +95,90 @@ const CreateDateSlots = async (
   return result;
 };
 
+// Slot type
+type Slot = {
+  start_time: string; // e.g. "8:00 AM"
+  end_time: string; // e.g. "9:00 AM"
+  type: 'ONLINE' | 'IN_PERSON'; // restrict to your enum values
+};
+
+// Day with slots
+type DaySlots = {
+  date: string; // ISO date string, e.g. "2025-09-07"
+  slots: Slot[];
+};
+
+// Whole payload
+type CalendarPayload = { data: DaySlots[] };
+
+const CreateSlotsWithCalendarDate = async (
+  counselorId: string,
+  slots: CalendarPayload,
+) => {
+  console.log(counselorId, slots);
+  const result = await prisma.$transaction(async (tx) => {
+    const allSlots: any[] = [];
+
+    for (const day of slots.data) {
+      const calendarDate = new Date(day.date);
+      calendarDate.setUTCHours(0, 0, 0, 0);
+
+      // Find or create calendar
+      let calendar = await tx.calendar.findUnique({
+        where: {
+          counselor_id_date: {
+            counselor_id: counselorId,
+            date: calendarDate,
+          },
+        },
+      });
+
+      if (!calendar) {
+        calendar = await tx.calendar.create({
+          data: {
+            counselor_id: counselorId,
+            date: calendarDate,
+          },
+        });
+      }
+
+      // Collect all slots for bulk insert
+      for (const slot of day.slots) {
+        allSlots.push({
+          calendar_id: calendar.id,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          type: slot.type,
+          status: 'AVAILABLE',
+        });
+      }
+    }
+
+    console.log(allSlots);
+
+    // Insert all slots in one bulk query
+    const createdSlots = await tx.timeSlot.createMany({
+      data: allSlots,
+      skipDuplicates: true,
+    });
+
+    return createdSlots;
+  });
+
+  return result;
+};
+
+const GetSlotsWithCalendarDate = async (counselorId: string) => {
+  return {};
+};
+
 const CalendarService = {
   GetCalenders,
   CreateCalenderDate,
   GetDateSlots,
   CreateDateSlots,
+  CreateSlotsWithCalendarDate,
+  GetSlotsWithCalendarDate,
 };
 
 export default CalendarService;

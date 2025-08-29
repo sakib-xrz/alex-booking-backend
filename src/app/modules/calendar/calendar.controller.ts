@@ -45,11 +45,36 @@ const PostDateSlots = catchAsync(async (req, res) => {
   });
 });
 
+const PostSlotsWithCalendarDate = catchAsync(async (req, res) => {
+  const result = await CalendarService.CreateSlotsWithCalendarDate(
+    req.user.id,
+    req.body,
+  );
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.CREATED,
+    message: 'Calendar slots created successfully',
+    data: result,
+  });
+});
+
+const GetSlotsWithCalendarDate = catchAsync(async (req, res) => {
+  const result = await CalendarService.GetSlotsWithCalendarDate(req.user.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.CREATED,
+    message: 'Calendar slots created successfully',
+    data: result,
+  });
+});
+
 const CalendarController = {
   GetCalendar,
   PostCalendarDate,
   GetDateSlots,
   PostDateSlots,
+  PostSlotsWithCalendarDate,
+  GetSlotsWithCalendarDate,
 };
 
 export default CalendarController;
