@@ -321,11 +321,192 @@ const getCalendarEvent = async (eventId: string, counselorId: string) => {
   }
 };
 
+// Reschedule calendar event with new time and details
+const rescheduleCalendarEvent = async (
+  eventId: string,
+  counselorId: string,
+  data: {
+    appointmentId: string;
+    clientEmail: string;
+    clientName: string;
+    startDateTime: Date;
+    endDateTime: Date;
+    timeZone?: string;
+  },
+) => {
+  console.log('Rescheduling Google Calendar event:', eventId, data);
+
+  // Validate dates before proceeding
+  if (
+    !data.startDateTime ||
+    !data.endDateTime ||
+    isNaN(data.startDateTime.getTime()) ||
+    isNaN(data.endDateTime.getTime())
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Invalid date values: startDateTime=${data.startDateTime}, endDateTime=${data.endDateTime}`,
+    );
+  }
+
+  try {
+    // Get appointment details
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: data.appointmentId },
+      include: {
+        client: true,
+        counselor: true,
+        time_slot: {
+          include: {
+            calendar: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Appointment not found');
+    }
+
+    // Check if counselor has Google Calendar connected
+    const isConnected =
+      await GoogleOAuthService.isCalendarConnected(counselorId);
+    if (!isConnected) {
+      console.warn(
+        `Google Calendar not connected for counselor ${counselorId}`,
+      );
+      return null; // Don't fail the reschedule, just skip calendar update
+    }
+
+    // Get authenticated calendar client
+    const calendar = await GoogleOAuthService.getCalendarClient(counselorId);
+
+    // Create updated event details
+    const eventTitle = `Counselling Session - ${data.clientName}`;
+
+    // Use the business timezone for formatting display dates
+    const businessTimeZone = data.timeZone || 'Asia/Dhaka';
+
+    // Convert UTC times back to business timezone for display in description
+    const localStartTime = toZonedTime(data.startDateTime, businessTimeZone);
+    const localEndTime = toZonedTime(data.endDateTime, businessTimeZone);
+
+    console.log('=== GOOGLE CALENDAR RESCHEDULE DEBUG ===');
+    console.log(
+      'New UTC times:',
+      data.startDateTime.toISOString(),
+      '-',
+      data.endDateTime.toISOString(),
+    );
+    console.log(
+      'Converted to local for display:',
+      localStartTime.toLocaleString(),
+      '-',
+      localEndTime.toLocaleString(),
+    );
+
+    let formattedDate, formattedStartTime, formattedEndTime;
+    try {
+      formattedDate = format(localStartTime, 'PPPP');
+      formattedStartTime = format(localStartTime, 'p');
+      formattedEndTime = format(localEndTime, 'p');
+    } catch (error) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Failed to format dates: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    const eventDescription = `
+Counselling session with ${data.clientName} (RESCHEDULED)
+Date: ${formattedDate}
+Time: ${formattedStartTime} - ${formattedEndTime} (${businessTimeZone})
+Session Type: ${appointment.session_type}
+${appointment.notes ? `Notes: ${appointment.notes}` : ''}
+
+Appointment ID: ${data.appointmentId}
+    `.trim();
+
+    const eventUpdates: calendar_v3.Schema$Event = {
+      summary: eventTitle,
+      description: eventDescription,
+      start: {
+        dateTime: data.startDateTime.toISOString(), // This is already UTC
+        timeZone: businessTimeZone, // This tells Google what timezone to display in
+      },
+      end: {
+        dateTime: data.endDateTime.toISOString(), // This is already UTC
+        timeZone: businessTimeZone, // This tells Google what timezone to display in
+      },
+      attendees: [
+        {
+          email: appointment.counselor.email,
+          displayName: appointment.counselor.name,
+          responseStatus: 'accepted',
+          organizer: true,
+        },
+        {
+          email: data.clientEmail,
+          displayName: data.clientName,
+          responseStatus: 'needsAction',
+          optional: false,
+        },
+      ],
+    };
+
+    // Update the event
+    const response = await calendar.events.patch({
+      calendarId: 'primary',
+      eventId: eventId,
+      requestBody: eventUpdates,
+      sendUpdates: 'all', // Send updated invitations to all attendees
+      sendNotifications: true, // Ensure notifications are sent
+    });
+
+    const updatedEvent = response.data;
+
+    console.log(
+      `Google Calendar event rescheduled successfully for appointment ${data.appointmentId}`,
+    );
+    console.log(`Event ID: ${updatedEvent.id}`);
+    console.log(`Event HTML Link: ${updatedEvent.htmlLink}`);
+
+    return {
+      eventId: updatedEvent.id,
+      htmlLink: updatedEvent.htmlLink,
+    };
+  } catch (error) {
+    console.error('Error rescheduling Google Calendar event:', error);
+
+    // If it's a Google API error, provide more specific error message
+    if (error instanceof Error && 'code' in error) {
+      const googleError = error as any;
+      if (googleError.code === 401) {
+        throw new AppError(
+          httpStatus.UNAUTHORIZED,
+          'Google Calendar access expired. Please reconnect your calendar.',
+        );
+      } else if (googleError.code === 403) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          'Insufficient permissions for Google Calendar. Please reconnect with proper permissions.',
+        );
+      }
+    }
+
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Failed to reschedule Google Calendar event: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+};
+
 const GoogleCalendarService = {
   createCalendarEvent,
   updateCalendarEvent,
   cancelCalendarEvent,
   getCalendarEvent,
+  rescheduleCalendarEvent,
 };
 
 export default GoogleCalendarService;

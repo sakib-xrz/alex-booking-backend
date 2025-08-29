@@ -16,4 +16,5 @@ router.get('/', (0, validateRequest_1.default)(appointment_validation_1.default.
 router.get('/:appointmentId', appointment_controller_1.default.GetCounselorAppointmentDetailsById);
 router.patch('/:appointmentId/completed', appointment_controller_1.default.CompleteCounselorAppointmentById);
 router.patch('/:appointmentId/cancel', (0, validateRequest_1.default)(appointment_validation_1.default.cancelAppointmentSchema), appointment_controller_1.default.CancelCounselorAppointmentById);
+router.patch('/:appointmentId/reschedule', (0, validateRequest_1.default)(appointment_validation_1.default.rescheduleAppointmentSchema), appointment_controller_1.default.RescheduleCounselorAppointmentById);
 exports.AppointmentRoutes = router;

@@ -27,5 +27,10 @@ router.patch(
   validateRequest(AppointmentValidation.cancelAppointmentSchema),
   AppointmentController.CancelCounselorAppointmentById,
 );
+router.patch(
+  '/:appointmentId/reschedule',
+  validateRequest(AppointmentValidation.rescheduleAppointmentSchema),
+  AppointmentController.RescheduleCounselorAppointmentById,
+);
 
 export const AppointmentRoutes = router;

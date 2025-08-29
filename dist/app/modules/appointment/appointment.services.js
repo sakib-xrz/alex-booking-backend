@@ -239,10 +239,120 @@ const CancelAppointmentById = (id, counselorId) => __awaiter(void 0, void 0, voi
         }
     }));
 });
+const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const currentAppointment = yield tx.appointment.findUnique({
+            where: { id: appointmentId },
+            include: {
+                time_slot: {
+                    include: {
+                        calendar: true,
+                    },
+                },
+                client: true,
+                counselor: true,
+                meeting: true,
+            },
+        });
+        if (!currentAppointment) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+        }
+        if (currentAppointment.counselor_id !== counselorId) {
+            throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to reschedule this appointment');
+        }
+        if (currentAppointment.status === 'CANCELLED') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Cannot reschedule a cancelled appointment');
+        }
+        if (currentAppointment.status === 'COMPLETED') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Cannot reschedule a completed appointment');
+        }
+        const newTimeSlot = yield tx.timeSlot.findUnique({
+            where: { id: newTimeSlotId },
+            include: {
+                calendar: true,
+            },
+        });
+        if (!newTimeSlot) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'New time slot not found');
+        }
+        if (newTimeSlot.status !== 'AVAILABLE') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Selected time slot is not available');
+        }
+        const newCalendar = yield tx.calendar.findUnique({
+            where: { id: newTimeSlot.calendar_id },
+        });
+        if (!newCalendar || newCalendar.counselor_id !== counselorId) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'New time slot must belong to the same counselor');
+        }
+        try {
+            yield tx.timeSlot.update({
+                where: { id: currentAppointment.time_slot_id },
+                data: { status: 'AVAILABLE' },
+            });
+            yield tx.timeSlot.update({
+                where: { id: newTimeSlotId },
+                data: { status: 'BOOKED' },
+            });
+            const updatedAppointment = yield tx.appointment.update({
+                where: { id: appointmentId },
+                data: {
+                    time_slot_id: newTimeSlotId,
+                    date: newTimeSlot.calendar.date,
+                    status: 'CONFIRMED',
+                },
+                include: {
+                    time_slot: {
+                        include: {
+                            calendar: true,
+                        },
+                    },
+                    client: true,
+                    counselor: true,
+                    meeting: true,
+                },
+            });
+            if (currentAppointment.event_id) {
+                try {
+                    const appointmentDate = new Date(newTimeSlot.calendar.date);
+                    const [startHour, startMinute] = newTimeSlot.start_time
+                        .split(':')
+                        .map(Number);
+                    const [endHour, endMinute] = newTimeSlot.end_time
+                        .split(':')
+                        .map(Number);
+                    const startDateTime = new Date(appointmentDate);
+                    startDateTime.setHours(startHour, startMinute, 0, 0);
+                    const endDateTime = new Date(appointmentDate);
+                    endDateTime.setHours(endHour, endMinute, 0, 0);
+                    const businessTimeZone = 'Asia/Dhaka';
+                    const utcStartTime = new Date(startDateTime.getTime() - startDateTime.getTimezoneOffset() * 60000);
+                    const utcEndTime = new Date(endDateTime.getTime() - endDateTime.getTimezoneOffset() * 60000);
+                    yield googleCalendar_services_1.default.rescheduleCalendarEvent(currentAppointment.event_id, counselorId, {
+                        appointmentId: appointmentId,
+                        clientEmail: currentAppointment.client.email,
+                        clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
+                        startDateTime: utcStartTime,
+                        endDateTime: utcEndTime,
+                        timeZone: businessTimeZone,
+                    });
+                }
+                catch (calendarError) {
+                    console.error('Failed to reschedule Google Calendar event:', calendarError);
+                }
+            }
+            return updatedAppointment;
+        }
+        catch (error) {
+            console.error('Error during appointment rescheduling:', error);
+            throw error;
+        }
+    }));
+});
 const AppointmentService = {
     GetCounselorAppointmentsById,
     GetCounselorAppointmentDetailsById,
     CompleteAppointmentById,
     CancelAppointmentById,
+    RescheduleAppointmentById,
 };
 exports.default = AppointmentService;
