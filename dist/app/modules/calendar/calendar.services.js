@@ -84,10 +84,59 @@ const CreateDateSlots = (calendarId, slots) => __awaiter(void 0, void 0, void 0,
     });
     return result;
 });
+const CreateSlotsWithCalendarDate = (counselorId, slots) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const allSlots = [];
+        for (const day of slots.data) {
+            const calendarDate = new Date(day.date);
+            calendarDate.setUTCHours(0, 0, 0, 0);
+            let calendar = yield tx.calendar.findUnique({
+                where: {
+                    counselor_id_date: {
+                        counselor_id: counselorId,
+                        date: calendarDate,
+                    },
+                },
+            });
+            if (!calendar) {
+                calendar = yield tx.calendar.create({
+                    data: {
+                        counselor_id: counselorId,
+                        date: calendarDate,
+                    },
+                });
+            }
+            for (const slot of day.slots) {
+                allSlots.push({
+                    calendar_id: calendar.id,
+                    start_time: slot.start_time,
+                    end_time: slot.end_time,
+                    type: slot.type,
+                    status: 'AVAILABLE',
+                });
+            }
+        }
+        const createdSlots = yield tx.timeSlot.createMany({
+            data: allSlots,
+            skipDuplicates: true,
+        });
+        return createdSlots;
+    }));
+    return result;
+});
+const GetSlotsWithCalendarDate = (counselorId) => __awaiter(void 0, void 0, void 0, function* () {
+    const calendars = yield prisma_1.default.calendar.findMany({
+        where: { counselor_id: counselorId },
+        include: { time_slots: true },
+    });
+    return calendars;
+});
 const CalendarService = {
     GetCalenders,
     CreateCalenderDate,
     GetDateSlots,
     CreateDateSlots,
+    CreateSlotsWithCalendarDate,
+    GetSlotsWithCalendarDate,
 };
 exports.default = CalendarService;

@@ -62,8 +62,8 @@ const GetSlotsWithCalendarDate = catchAsync(async (req, res) => {
   const result = await CalendarService.GetSlotsWithCalendarDate(req.user.id);
   sendResponse(res, {
     success: true,
-    statusCode: httpStatus.CREATED,
-    message: 'Calendar slots created successfully',
+    statusCode: httpStatus.OK,
+    message: 'Calendar slots got successfully',
     data: result,
   });
 });

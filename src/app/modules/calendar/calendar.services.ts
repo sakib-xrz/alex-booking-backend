@@ -115,7 +115,6 @@ const CreateSlotsWithCalendarDate = async (
   counselorId: string,
   slots: CalendarPayload,
 ) => {
-  console.log(counselorId, slots);
   const result = await prisma.$transaction(async (tx) => {
     const allSlots: any[] = [];
 
@@ -154,8 +153,6 @@ const CreateSlotsWithCalendarDate = async (
       }
     }
 
-    console.log(allSlots);
-
     // Insert all slots in one bulk query
     const createdSlots = await tx.timeSlot.createMany({
       data: allSlots,
@@ -169,7 +166,12 @@ const CreateSlotsWithCalendarDate = async (
 };
 
 const GetSlotsWithCalendarDate = async (counselorId: string) => {
-  return {};
+  const calendars = await prisma.calendar.findMany({
+    where: { counselor_id: counselorId },
+    include: { time_slots: true },
+  });
+
+  return calendars;
 };
 
 const CalendarService = {

@@ -16,6 +16,7 @@ router
     .route('/')
     .get(calendar_controller_1.default.GetCalendar)
     .post((0, validateRequest_1.default)(calendar_validation_1.default.CreateCalendarSchema), calendar_controller_1.default.PostCalendarDate);
+router.route('/slots').get(calendar_controller_1.default.GetSlotsWithCalendarDate).post(calendar_controller_1.default.PostSlotsWithCalendarDate);
 router
     .route('/:id/slots')
     .get(calendar_controller_1.default.GetDateSlots)
