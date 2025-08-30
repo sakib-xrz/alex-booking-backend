@@ -10,11 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
-const isProduction = process.env.NODE_ENV === 'production';
 const isVercel = process.env.VERCEL === '1';
-const prisma = new client_1.PrismaClient({
-    log: isProduction ? ['error', 'warn'] : ['query', 'info', 'warn', 'error'],
-});
+const prisma = new client_1.PrismaClient({});
 prisma
     .$connect()
     .then(() => {

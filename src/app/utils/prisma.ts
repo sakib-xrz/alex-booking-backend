@@ -1,12 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
 // Environment-specific configuration
-const isProduction = process.env.NODE_ENV === 'production';
 const isVercel = process.env.VERCEL === '1';
 
-const prisma = new PrismaClient({
-  log: isProduction ? ['error', 'warn'] : ['query', 'info', 'warn', 'error'],
-});
+const prisma = new PrismaClient({});
 
 // Increase transaction timeout for serverless environments
 // This helps prevent timeout issues in Vercel
