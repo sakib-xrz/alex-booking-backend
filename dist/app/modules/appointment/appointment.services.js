@@ -284,100 +284,100 @@ const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) =>
         if (!newCalendar || newCalendar.counselor_id !== counselorId) {
             throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'New time slot must belong to the same counselor');
         }
-        try {
-            yield tx.timeSlot.update({
-                where: { id: currentAppointment.time_slot_id },
-                data: { status: 'AVAILABLE' },
-            });
-            yield tx.timeSlot.update({
-                where: { id: newTimeSlotId },
-                data: { status: 'BOOKED' },
-            });
-            const updatedAppointment = yield tx.appointment.update({
-                where: { id: appointmentId },
-                data: {
-                    time_slot_id: newTimeSlotId,
-                    date: newTimeSlot.calendar.date,
-                    status: 'CONFIRMED',
-                },
-                include: {
-                    time_slot: {
-                        include: {
-                            calendar: true,
-                        },
+        yield tx.timeSlot.update({
+            where: { id: currentAppointment.time_slot_id },
+            data: { status: 'AVAILABLE' },
+        });
+        yield tx.timeSlot.update({
+            where: { id: newTimeSlotId },
+            data: { status: 'BOOKED' },
+        });
+        const updatedAppointment = yield tx.appointment.update({
+            where: { id: appointmentId },
+            data: {
+                time_slot_id: newTimeSlotId,
+                date: newTimeSlot.calendar.date,
+                status: 'CONFIRMED',
+            },
+            include: {
+                time_slot: {
+                    include: {
+                        calendar: true,
                     },
-                    client: true,
-                    counselor: true,
-                    meeting: true,
                 },
-            });
-            return {
-                updatedAppointment,
-                eventId: currentAppointment.event_id,
-                appointmentDate: newTimeSlot.calendar.date,
-                startTimeText: newTimeSlot.start_time,
-                endTimeText: newTimeSlot.end_time,
-                clientEmail: currentAppointment.client.email,
-                clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
-            };
-        }
-        catch (error) {
-            console.error('Error during appointment rescheduling:', error);
-            throw error;
-        }
-    }));
+                client: true,
+                counselor: true,
+                meeting: true,
+            },
+        });
+        return {
+            updatedAppointment,
+            eventId: currentAppointment.event_id,
+            appointmentDate: newTimeSlot.calendar.date,
+            startTimeText: newTimeSlot.start_time,
+            endTimeText: newTimeSlot.end_time,
+            clientEmail: currentAppointment.client.email,
+            clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
+        };
+    }), {
+        timeout: 10000,
+        maxWait: 5000,
+    });
     const { updatedAppointment, eventId, appointmentDate, startTimeText, endTimeText, clientEmail, clientName, } = txResult;
     if (eventId) {
-        try {
-            const businessTimeZone = 'Asia/Dhaka';
-            const appointmentDateObj = new Date(appointmentDate);
-            const startTimeMatch = startTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-            const endTimeMatch = endTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-            if (!startTimeMatch || !endTimeMatch) {
-                throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid time format in time slot');
+        setImmediate(() => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                const businessTimeZone = 'Asia/Dhaka';
+                const appointmentDateObj = new Date(appointmentDate);
+                const startTimeMatch = startTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                const endTimeMatch = endTimeText.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                if (!startTimeMatch || !endTimeMatch) {
+                    console.error('Invalid time format in time slot for Google Calendar update');
+                    return;
+                }
+                let startHour = parseInt(startTimeMatch[1]);
+                const startMinute = parseInt(startTimeMatch[2]);
+                const startPeriod = startTimeMatch[3].toUpperCase();
+                if (startPeriod === 'PM' && startHour !== 12) {
+                    startHour += 12;
+                }
+                else if (startPeriod === 'AM' && startHour === 12) {
+                    startHour = 0;
+                }
+                let endHour = parseInt(endTimeMatch[1]);
+                const endMinute = parseInt(endTimeMatch[2]);
+                const endPeriod = endTimeMatch[3].toUpperCase();
+                if (endPeriod === 'PM' && endHour !== 12) {
+                    endHour += 12;
+                }
+                else if (endPeriod === 'AM' && endHour === 12) {
+                    endHour = 0;
+                }
+                const year = appointmentDateObj.getFullYear();
+                const month = String(appointmentDateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(appointmentDateObj.getDate()).padStart(2, '0');
+                const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
+                const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
+                const utcStartTime = new Date(startTimeStr);
+                const utcEndTime = new Date(endTimeStr);
+                console.log('=== RESCHEDULE TIMEZONE DEBUG ===');
+                console.log('Original time slot:', startTimeText, '-', endTimeText);
+                console.log('Created time strings:', startTimeStr, '-', endTimeStr);
+                console.log('Converted to UTC:', utcStartTime.toISOString(), '-', utcEndTime.toISOString());
+                console.log('Business timezone:', businessTimeZone);
+                yield googleCalendar_services_1.default.rescheduleCalendarEvent(eventId, counselorId, {
+                    appointmentId,
+                    clientEmail,
+                    clientName,
+                    startDateTime: utcStartTime,
+                    endDateTime: utcEndTime,
+                    timeZone: businessTimeZone,
+                });
             }
-            let startHour = parseInt(startTimeMatch[1]);
-            const startMinute = parseInt(startTimeMatch[2]);
-            const startPeriod = startTimeMatch[3].toUpperCase();
-            if (startPeriod === 'PM' && startHour !== 12) {
-                startHour += 12;
+            catch (calendarError) {
+                console.error('Failed to reschedule Google Calendar event (async):', calendarError);
             }
-            else if (startPeriod === 'AM' && startHour === 12) {
-                startHour = 0;
-            }
-            let endHour = parseInt(endTimeMatch[1]);
-            const endMinute = parseInt(endTimeMatch[2]);
-            const endPeriod = endTimeMatch[3].toUpperCase();
-            if (endPeriod === 'PM' && endHour !== 12) {
-                endHour += 12;
-            }
-            else if (endPeriod === 'AM' && endHour === 12) {
-                endHour = 0;
-            }
-            const year = appointmentDateObj.getFullYear();
-            const month = String(appointmentDateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(appointmentDateObj.getDate()).padStart(2, '0');
-            const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
-            const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
-            const utcStartTime = new Date(startTimeStr);
-            const utcEndTime = new Date(endTimeStr);
-            console.log('=== RESCHEDULE TIMEZONE DEBUG ===');
-            console.log('Original time slot:', startTimeText, '-', endTimeText);
-            console.log('Created time strings:', startTimeStr, '-', endTimeStr);
-            console.log('Converted to UTC:', utcStartTime.toISOString(), '-', utcEndTime.toISOString());
-            console.log('Business timezone:', businessTimeZone);
-            yield googleCalendar_services_1.default.rescheduleCalendarEvent(eventId, counselorId, {
-                appointmentId,
-                clientEmail,
-                clientName,
-                startDateTime: utcStartTime,
-                endDateTime: utcEndTime,
-                timeZone: businessTimeZone,
-            });
-        }
-        catch (calendarError) {
-            console.error('Failed to reschedule Google Calendar event:', calendarError);
-        }
+        }));
     }
     return updatedAppointment;
 });

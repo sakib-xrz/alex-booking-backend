@@ -299,83 +299,83 @@ const RescheduleAppointmentById = async (
   counselorId: string,
   newTimeSlotId: string,
 ) => {
-  // First perform database updates in a single, short transaction
-  const txResult = await prisma.$transaction(async (tx) => {
-    // 1. Get current appointment details
-    const currentAppointment = await tx.appointment.findUnique({
-      where: { id: appointmentId },
-      include: {
-        time_slot: {
-          include: {
-            calendar: true,
+  // First perform database updates in a single, short transaction with explicit timeout
+  const txResult = await prisma.$transaction(
+    async (tx) => {
+      // 1. Get current appointment details
+      const currentAppointment = await tx.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          time_slot: {
+            include: {
+              calendar: true,
+            },
           },
+          client: true,
+          counselor: true,
+          meeting: true,
         },
-        client: true,
-        counselor: true,
-        meeting: true,
-      },
-    });
+      });
 
-    if (!currentAppointment) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Appointment not found');
-    }
+      if (!currentAppointment) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Appointment not found');
+      }
 
-    // Verify that the appointment belongs to the counselor
-    if (currentAppointment.counselor_id !== counselorId) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        'You are not authorized to reschedule this appointment',
-      );
-    }
+      // Verify that the appointment belongs to the counselor
+      if (currentAppointment.counselor_id !== counselorId) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          'You are not authorized to reschedule this appointment',
+        );
+      }
 
-    // Check if appointment can be rescheduled
-    if (currentAppointment.status === 'CANCELLED') {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Cannot reschedule a cancelled appointment',
-      );
-    }
+      // Check if appointment can be rescheduled
+      if (currentAppointment.status === 'CANCELLED') {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Cannot reschedule a cancelled appointment',
+        );
+      }
 
-    if (currentAppointment.status === 'COMPLETED') {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Cannot reschedule a completed appointment',
-      );
-    }
+      if (currentAppointment.status === 'COMPLETED') {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Cannot reschedule a completed appointment',
+        );
+      }
 
-    // 2. Get new time slot details
-    const newTimeSlot = await tx.timeSlot.findUnique({
-      where: { id: newTimeSlotId },
-      include: {
-        calendar: true,
-      },
-    });
+      // 2. Get new time slot details
+      const newTimeSlot = await tx.timeSlot.findUnique({
+        where: { id: newTimeSlotId },
+        include: {
+          calendar: true,
+        },
+      });
 
-    if (!newTimeSlot) {
-      throw new AppError(httpStatus.NOT_FOUND, 'New time slot not found');
-    }
+      if (!newTimeSlot) {
+        throw new AppError(httpStatus.NOT_FOUND, 'New time slot not found');
+      }
 
-    // Check if new time slot is available
-    if (newTimeSlot.status !== 'AVAILABLE') {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Selected time slot is not available',
-      );
-    }
+      // Check if new time slot is available
+      if (newTimeSlot.status !== 'AVAILABLE') {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Selected time slot is not available',
+        );
+      }
 
-    // Check if new time slot belongs to the same counselor
-    const newCalendar = await tx.calendar.findUnique({
-      where: { id: newTimeSlot.calendar_id },
-    });
+      // Check if new time slot belongs to the same counselor
+      const newCalendar = await tx.calendar.findUnique({
+        where: { id: newTimeSlot.calendar_id },
+      });
 
-    if (!newCalendar || newCalendar.counselor_id !== counselorId) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'New time slot must belong to the same counselor',
-      );
-    }
+      if (!newCalendar || newCalendar.counselor_id !== counselorId) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'New time slot must belong to the same counselor',
+        );
+      }
 
-    try {
       // 3. Update old time slot status to AVAILABLE
       await tx.timeSlot.update({
         where: { id: currentAppointment.time_slot_id },
@@ -407,6 +407,7 @@ const RescheduleAppointmentById = async (
           meeting: true,
         },
       });
+
       // Return values needed for post-transaction Google Calendar update
       return {
         updatedAppointment,
@@ -417,11 +418,13 @@ const RescheduleAppointmentById = async (
         clientEmail: currentAppointment.client.email,
         clientName: `${currentAppointment.client.first_name} ${currentAppointment.client.last_name}`,
       };
-    } catch (error) {
-      console.error('Error during appointment rescheduling:', error);
-      throw error;
-    }
-  });
+    },
+    {
+      // Explicit timeout configuration for serverless environments
+      timeout: 10000, // 10 seconds
+      maxWait: 5000, // 5 seconds max wait for connection
+    },
+  );
 
   const {
     updatedAppointment,
@@ -433,94 +436,101 @@ const RescheduleAppointmentById = async (
     clientName,
   } = txResult;
 
-  // After the transaction, update Google Calendar (external API)
+  // After the transaction, update Google Calendar (external API) asynchronously
   if (eventId) {
-    try {
-      const businessTimeZone = 'Asia/Dhaka'; // TODO: move to config
+    // Use setImmediate to defer Google Calendar update to next tick
+    // This prevents blocking the response and reduces transaction time
+    setImmediate(async () => {
+      try {
+        const businessTimeZone = 'Asia/Dhaka'; // TODO: move to config
 
-      // Get the appointment date (same as in payment service)
-      const appointmentDateObj = new Date(appointmentDate);
+        // Get the appointment date (same as in payment service)
+        const appointmentDateObj = new Date(appointmentDate);
 
-      // Parse the time strings and create proper datetime objects in the business timezone
-      const startTimeMatch = (startTimeText as string).match(
-        /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
-      );
-      const endTimeMatch = (endTimeText as string).match(
-        /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
-      );
-
-      if (!startTimeMatch || !endTimeMatch) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'Invalid time format in time slot',
+        // Parse the time strings and create proper datetime objects in the business timezone
+        const startTimeMatch = (startTimeText as string).match(
+          /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
         );
+        const endTimeMatch = (endTimeText as string).match(
+          /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
+        );
+
+        if (!startTimeMatch || !endTimeMatch) {
+          console.error(
+            'Invalid time format in time slot for Google Calendar update',
+          );
+          return;
+        }
+
+        // Parse start time
+        let startHour = parseInt(startTimeMatch[1]);
+        const startMinute = parseInt(startTimeMatch[2]);
+        const startPeriod = startTimeMatch[3].toUpperCase();
+
+        if (startPeriod === 'PM' && startHour !== 12) {
+          startHour += 12;
+        } else if (startPeriod === 'AM' && startHour === 12) {
+          startHour = 0;
+        }
+
+        // Parse end time
+        let endHour = parseInt(endTimeMatch[1]);
+        const endMinute = parseInt(endTimeMatch[2]);
+        const endPeriod = endTimeMatch[3].toUpperCase();
+
+        if (endPeriod === 'PM' && endHour !== 12) {
+          endHour += 12;
+        } else if (endPeriod === 'AM' && endHour === 12) {
+          endHour = 0;
+        }
+
+        // Create the date string in YYYY-MM-DD format
+        const year = appointmentDateObj.getFullYear();
+        const month = String(appointmentDateObj.getMonth() + 1).padStart(
+          2,
+          '0',
+        );
+        const day = String(appointmentDateObj.getDate()).padStart(2, '0');
+
+        // Create datetime strings in ISO format with explicit timezone offset (UTC+6)
+        const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
+        const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
+
+        // Convert to UTC Date objects
+        const utcStartTime = new Date(startTimeStr);
+        const utcEndTime = new Date(endTimeStr);
+
+        console.log('=== RESCHEDULE TIMEZONE DEBUG ===');
+        console.log('Original time slot:', startTimeText, '-', endTimeText);
+        console.log('Created time strings:', startTimeStr, '-', endTimeStr);
+        console.log(
+          'Converted to UTC:',
+          utcStartTime.toISOString(),
+          '-',
+          utcEndTime.toISOString(),
+        );
+        console.log('Business timezone:', businessTimeZone);
+
+        await GoogleCalendarService.rescheduleCalendarEvent(
+          eventId,
+          counselorId,
+          {
+            appointmentId,
+            clientEmail,
+            clientName,
+            startDateTime: utcStartTime,
+            endDateTime: utcEndTime,
+            timeZone: businessTimeZone,
+          },
+        );
+      } catch (calendarError) {
+        console.error(
+          'Failed to reschedule Google Calendar event (async):',
+          calendarError,
+        );
+        // Do not throw - DB changes already committed
       }
-
-      // Parse start time
-      let startHour = parseInt(startTimeMatch[1]);
-      const startMinute = parseInt(startTimeMatch[2]);
-      const startPeriod = startTimeMatch[3].toUpperCase();
-
-      if (startPeriod === 'PM' && startHour !== 12) {
-        startHour += 12;
-      } else if (startPeriod === 'AM' && startHour === 12) {
-        startHour = 0;
-      }
-
-      // Parse end time
-      let endHour = parseInt(endTimeMatch[1]);
-      const endMinute = parseInt(endTimeMatch[2]);
-      const endPeriod = endTimeMatch[3].toUpperCase();
-
-      if (endPeriod === 'PM' && endHour !== 12) {
-        endHour += 12;
-      } else if (endPeriod === 'AM' && endHour === 12) {
-        endHour = 0;
-      }
-
-      // Create the date string in YYYY-MM-DD format
-      const year = appointmentDateObj.getFullYear();
-      const month = String(appointmentDateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(appointmentDateObj.getDate()).padStart(2, '0');
-
-      // Create datetime strings in ISO format with explicit timezone offset (UTC+6)
-      const startTimeStr = `${year}-${month}-${day}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00+06:00`;
-      const endTimeStr = `${year}-${month}-${day}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00+06:00`;
-
-      // Convert to UTC Date objects
-      const utcStartTime = new Date(startTimeStr);
-      const utcEndTime = new Date(endTimeStr);
-
-      console.log('=== RESCHEDULE TIMEZONE DEBUG ===');
-      console.log('Original time slot:', startTimeText, '-', endTimeText);
-      console.log('Created time strings:', startTimeStr, '-', endTimeStr);
-      console.log(
-        'Converted to UTC:',
-        utcStartTime.toISOString(),
-        '-',
-        utcEndTime.toISOString(),
-      );
-      console.log('Business timezone:', businessTimeZone);
-
-      await GoogleCalendarService.rescheduleCalendarEvent(
-        eventId,
-        counselorId,
-        {
-          appointmentId,
-          clientEmail,
-          clientName,
-          startDateTime: utcStartTime,
-          endDateTime: utcEndTime,
-          timeZone: businessTimeZone,
-        },
-      );
-    } catch (calendarError) {
-      console.error(
-        'Failed to reschedule Google Calendar event:',
-        calendarError,
-      );
-      // Do not throw - DB changes already committed
-    }
+    });
   }
 
   return updatedAppointment;
