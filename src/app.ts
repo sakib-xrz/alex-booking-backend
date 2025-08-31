@@ -29,6 +29,7 @@ app.use(
       'http://localhost:3001',
       'https://admin-alexrodriguez.vercel.app',
       'https://alex-rodriguez.vercel.app',
+      'https://client-alexrodriguez.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders:

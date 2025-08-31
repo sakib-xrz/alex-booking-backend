@@ -25,6 +25,7 @@ app.use((0, cors_1.default)({
         'http://localhost:3001',
         'https://admin-alexrodriguez.vercel.app',
         'https://alex-rodriguez.vercel.app',
+        'https://client-alexrodriguez.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Authorization, Origin, X-Requested-With, Accept',
