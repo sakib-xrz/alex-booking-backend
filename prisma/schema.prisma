@@ -92,15 +92,16 @@ model Calendar {
 }
 
 model TimeSlot {
-  id          String      @id @default(uuid())
-  calendar_id String
+  id             String      @id @default(uuid())
+  calendar_id    String
   // room_id     String?
-  start_time  String
-  end_time    String
-  type        SessionType
-  status      SlotStatus  @default(AVAILABLE)
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
+  start_time     String
+  end_time       String
+  type           SessionType
+  status         SlotStatus  @default(AVAILABLE)
+  is_rescheduled Boolean     @default(false)
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
 
   // Relations
   calendar     Calendar      @relation(fields: [calendar_id], references: [id], onDelete: Cascade)
@@ -151,17 +152,18 @@ model Client {
 }
 
 model Appointment {
-  id           String            @id @default(uuid())
-  client_id    String
-  counselor_id String
-  time_slot_id String
-  session_type SessionType
-  date         DateTime          @db.Date
-  notes        String?
-  status       AppointmentStatus @default(PENDING)
-  event_id     String? // Google Calendar event ID
-  created_at   DateTime          @default(now())
-  updated_at   DateTime          @updatedAt
+  id             String            @id @default(uuid())
+  client_id      String
+  counselor_id   String
+  time_slot_id   String
+  session_type   SessionType
+  date           DateTime          @db.Date
+  notes          String?
+  status         AppointmentStatus @default(PENDING)
+  is_rescheduled Boolean           @default(false)
+  event_id       String? // Google Calendar event ID
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
 
   // Relations
   client    Client   @relation(fields: [client_id], references: [id], onDelete: Restrict)

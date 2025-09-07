@@ -385,7 +385,7 @@ const RescheduleAppointmentById = async (
       // 4. Update new time slot status to BOOKED
       await tx.timeSlot.update({
         where: { id: newTimeSlotId },
-        data: { status: 'BOOKED' },
+        data: { status: 'BOOKED', is_rescheduled: true },
       });
 
       // 5. Update appointment with new time slot and date
@@ -395,6 +395,7 @@ const RescheduleAppointmentById = async (
           time_slot_id: newTimeSlotId,
           date: newTimeSlot.calendar.date,
           status: 'CONFIRMED', // Set status to confirmed after rescheduling
+          is_rescheduled: true,
         },
         include: {
           time_slot: {

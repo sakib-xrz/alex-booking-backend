@@ -51,6 +51,7 @@ const GetDateSlots = async (calendarId: string) => {
       end_time: true,
       type: true,
       status: true,
+      is_rescheduled: true,
       created_at: true,
       updated_at: true,
     },
@@ -62,6 +63,7 @@ const GetDateSlots = async (calendarId: string) => {
     endTime: slot.end_time,
     type: slot.type,
     status: slot.status,
+    is_rescheduled: slot.is_rescheduled,
     createdAt: slot.created_at,
     updatedAt: slot.updated_at,
   }));
@@ -189,7 +191,9 @@ const DeleteTimeSlot = async (counselorId: string, slotId: string) => {
   });
 
   if (!slot) {
-    throw new Error('Time slot not found or you do not have permission to delete it');
+    throw new Error(
+      'Time slot not found or you do not have permission to delete it',
+    );
   }
 
   // Only allow deletion if status is AVAILABLE
