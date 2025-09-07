@@ -71,6 +71,15 @@ const GetSlotsWithCalendarDate = (0, catchAsync_1.default)((req, res) => __await
         data: result,
     });
 }));
+const DeleteTimeSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield calendar_services_1.default.DeleteTimeSlot(req.user.id, req.params.slotId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Time slot deleted successfully',
+        data: result,
+    });
+}));
 const CalendarController = {
     GetCalendar,
     PostCalendarDate,
@@ -78,5 +87,6 @@ const CalendarController = {
     PostDateSlots,
     PostSlotsWithCalendarDate,
     GetSlotsWithCalendarDate,
+    DeleteTimeSlot,
 };
 exports.default = CalendarController;

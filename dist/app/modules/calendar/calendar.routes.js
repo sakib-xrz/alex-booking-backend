@@ -21,4 +21,7 @@ router
     .route('/:id/slots')
     .get(calendar_controller_1.default.GetDateSlots)
     .post((0, validateRequest_1.default)(calendar_validation_1.default.CreateSlotsSchema), calendar_controller_1.default.PostDateSlots);
+router
+    .route('/slots/:slotId')
+    .delete(calendar_controller_1.default.DeleteTimeSlot);
 exports.CalendarRoutes = router;

@@ -174,6 +174,39 @@ const GetSlotsWithCalendarDate = async (counselorId: string) => {
   return calendars;
 };
 
+const DeleteTimeSlot = async (counselorId: string, slotId: string) => {
+  // First verify that the slot belongs to the counselor
+  const slot = await prisma.timeSlot.findFirst({
+    where: {
+      id: slotId,
+      calendar: {
+        counselor_id: counselorId,
+      },
+    },
+    include: {
+      calendar: true,
+    },
+  });
+
+  if (!slot) {
+    throw new Error('Time slot not found or you do not have permission to delete it');
+  }
+
+  // Only allow deletion if status is AVAILABLE
+  if (slot.status !== 'AVAILABLE') {
+    throw new Error('Only available slots can be deleted');
+  }
+
+  // Delete the slot
+  const deletedSlot = await prisma.timeSlot.delete({
+    where: {
+      id: slotId,
+    },
+  });
+
+  return deletedSlot;
+};
+
 const CalendarService = {
   GetCalenders,
   CreateCalenderDate,
@@ -181,6 +214,7 @@ const CalendarService = {
   CreateDateSlots,
   CreateSlotsWithCalendarDate,
   GetSlotsWithCalendarDate,
+  DeleteTimeSlot,
 };
 
 export default CalendarService;
