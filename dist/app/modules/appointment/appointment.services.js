@@ -290,7 +290,7 @@ const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) =>
         });
         yield tx.timeSlot.update({
             where: { id: newTimeSlotId },
-            data: { status: 'BOOKED' },
+            data: { status: 'BOOKED', is_rescheduled: true },
         });
         const updatedAppointment = yield tx.appointment.update({
             where: { id: appointmentId },
@@ -298,6 +298,7 @@ const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) =>
                 time_slot_id: newTimeSlotId,
                 date: newTimeSlot.calendar.date,
                 status: 'CONFIRMED',
+                is_rescheduled: true,
             },
             include: {
                 time_slot: {

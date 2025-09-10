@@ -58,6 +58,7 @@ const GetDateSlots = (calendarId) => __awaiter(void 0, void 0, void 0, function*
             end_time: true,
             type: true,
             status: true,
+            is_rescheduled: true,
             created_at: true,
             updated_at: true,
         },
@@ -68,6 +69,7 @@ const GetDateSlots = (calendarId) => __awaiter(void 0, void 0, void 0, function*
         endTime: slot.end_time,
         type: slot.type,
         status: slot.status,
+        is_rescheduled: slot.is_rescheduled,
         createdAt: slot.created_at,
         updatedAt: slot.updated_at,
     }));

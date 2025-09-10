@@ -1,21 +1,51 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import pick from '../../utils/pick';
 import ClientService from './client.services';
 
 const GetCounselorClients = catchAsync(async (req, res) => {
-  const result = await ClientService.GetCounselorClientsById(req.user.id);
+  // Pick only allowed filter and pagination fields from query
+  const filters = pick(req.query, ['search', 'gender']);
+  const paginationOptions = pick(req.query, [
+    'page',
+    'limit',
+    'sort_by',
+    'sort_order',
+  ]);
+
+  const result = await ClientService.GetCounselorClientsById(
+    req.user.id,
+    filters,
+    paginationOptions,
+  );
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: 'Client retrieved successfully',
+    message: 'Clients retrieved successfully',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+const GetClientDetailsWithHistory = catchAsync(async (req, res) => {
+  const result = await ClientService.GetClientDetailsWithHistory(
+    req.params.clientId,
+    req.user.id,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Client details retrieved successfully',
     data: result,
   });
 });
 
 const ClientController = {
   GetCounselorClients,
+  GetClientDetailsWithHistory,
 };
 
 export default ClientController;

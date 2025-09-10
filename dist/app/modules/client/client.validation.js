@@ -14,13 +14,33 @@ const createClientSchema = zod_1.z.object({
         }),
     }),
 });
-const verifyClientSchema = zod_1.z.object({
+const getClientDetailsSchema = zod_1.z.object({
     params: zod_1.z.object({
-        id: zod_1.z.string().uuid('Valid client ID is required'),
+        clientId: zod_1.z.string().uuid('Valid client ID is required'),
+    }),
+});
+const getClientsQuerySchema = zod_1.z.object({
+    query: zod_1.z.object({
+        search: zod_1.z.string().optional(),
+        gender: zod_1.z.nativeEnum(client_1.Gender).optional(),
+        page: zod_1.z.string().optional(),
+        limit: zod_1.z.string().optional(),
+        sort_by: zod_1.z
+            .enum([
+            'first_name',
+            'last_name',
+            'email',
+            'gender',
+            'date_of_birth',
+            'created_at',
+        ])
+            .optional(),
+        sort_order: zod_1.z.enum(['asc', 'desc']).optional(),
     }),
 });
 const ClientValidation = {
     createClientSchema,
-    verifyClientSchema,
+    getClientDetailsSchema,
+    getClientsQuerySchema,
 };
 exports.default = ClientValidation;

@@ -14,15 +14,36 @@ const createClientSchema = z.object({
   }),
 });
 
-const verifyClientSchema = z.object({
+const getClientDetailsSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Valid client ID is required'),
+    clientId: z.string().uuid('Valid client ID is required'),
+  }),
+});
+
+const getClientsQuerySchema = z.object({
+  query: z.object({
+    search: z.string().optional(),
+    gender: z.nativeEnum(Gender).optional(),
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    sort_by: z
+      .enum([
+        'first_name',
+        'last_name',
+        'email',
+        'gender',
+        'date_of_birth',
+        'created_at',
+      ])
+      .optional(),
+    sort_order: z.enum(['asc', 'desc']).optional(),
   }),
 });
 
 const ClientValidation = {
   createClientSchema,
-  verifyClientSchema,
+  getClientDetailsSchema,
+  getClientsQuerySchema,
 };
 
 export default ClientValidation;
