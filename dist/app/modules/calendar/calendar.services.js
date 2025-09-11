@@ -129,9 +129,52 @@ const CreateSlotsWithCalendarDate = (counselorId, slots) => __awaiter(void 0, vo
 const GetSlotsWithCalendarDate = (counselorId) => __awaiter(void 0, void 0, void 0, function* () {
     const calendars = yield prisma_1.default.calendar.findMany({
         where: { counselor_id: counselorId },
-        include: { time_slots: true },
+        include: {
+            time_slots: {
+                include: {
+                    appointments: {
+                        where: {
+                            status: {
+                                in: ['CONFIRMED', 'PENDING'],
+                            },
+                        },
+                        include: {
+                            client: {
+                                select: {
+                                    first_name: true,
+                                    last_name: true,
+                                    email: true,
+                                    phone: true,
+                                },
+                            },
+                            meeting: {
+                                select: {
+                                    platform: true,
+                                    link: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     });
-    return calendars;
+    const transformedCalendars = calendars.map((calendar) => (Object.assign(Object.assign({}, calendar), { time_slots: calendar.time_slots.map((slot) => {
+            const appointment = slot.appointments[0];
+            return Object.assign(Object.assign({}, slot), { appointment: appointment
+                    ? {
+                        id: appointment.id,
+                        session_type: appointment.session_type,
+                        date: appointment.date,
+                        status: appointment.status,
+                        is_rescheduled: appointment.is_rescheduled,
+                        client: appointment.client,
+                        meeting: appointment.meeting,
+                        created_at: appointment.created_at,
+                    }
+                    : null, appointments: undefined });
+        }) })));
+    return transformedCalendars;
 });
 const DeleteTimeSlot = (counselorId, slotId) => __awaiter(void 0, void 0, void 0, function* () {
     const slot = yield prisma_1.default.timeSlot.findFirst({

@@ -170,10 +170,62 @@ const CreateSlotsWithCalendarDate = async (
 const GetSlotsWithCalendarDate = async (counselorId: string) => {
   const calendars = await prisma.calendar.findMany({
     where: { counselor_id: counselorId },
-    include: { time_slots: true },
+    include: {
+      time_slots: {
+        include: {
+          appointments: {
+            where: {
+              status: {
+                in: ['CONFIRMED', 'PENDING'],
+              },
+            },
+            include: {
+              client: {
+                select: {
+                  first_name: true,
+                  last_name: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+              meeting: {
+                select: {
+                  platform: true,
+                  link: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
-  return calendars;
+  // Transform the data to include appointment information
+  const transformedCalendars = calendars.map((calendar) => ({
+    ...calendar,
+    time_slots: calendar.time_slots.map((slot) => {
+      const appointment = slot.appointments[0]; // Should only be one active appointment per slot
+      return {
+        ...slot,
+        appointment: appointment
+          ? {
+              id: appointment.id,
+              session_type: appointment.session_type,
+              date: appointment.date,
+              status: appointment.status,
+              is_rescheduled: appointment.is_rescheduled,
+              client: appointment.client,
+              meeting: appointment.meeting,
+              created_at: appointment.created_at,
+            }
+          : null,
+        appointments: undefined, // Remove the nested appointments array
+      };
+    }),
+  }));
+
+  return transformedCalendars;
 };
 
 const DeleteTimeSlot = async (counselorId: string, slotId: string) => {
