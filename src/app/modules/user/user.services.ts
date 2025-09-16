@@ -7,11 +7,19 @@ import {
 } from '../../utils/handelFile';
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import config from '../../config';
 import UserUtils from './user.utils';
 import sendMail from '../../utils/mailer';
+import calculatePagination, {
+  IPaginationOptions,
+} from '../../utils/pagination';
+import { counselorSearchableFields } from './user.constant';
+
+interface ICounselorFilters {
+  search?: string;
+}
 
 const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
   const user = await prisma.user.findUnique({
@@ -165,8 +173,71 @@ const CreateCounselor = async (payload: {
   return newCounselor;
 };
 
+const GetCounselors = async (
+  filters: ICounselorFilters,
+  paginationOptions: IPaginationOptions,
+) => {
+  const { page, limit, skip, sort_by, sort_order } =
+    calculatePagination(paginationOptions);
+  const { search } = filters;
+
+  const whereConditions: Prisma.UserWhereInput = {
+    role: Role.COUNSELOR,
+    is_deleted: false,
+  };
+
+  if (search) {
+    whereConditions.OR = counselorSearchableFields.map((field) => ({
+      [field]: {
+        contains: search,
+        mode: 'insensitive' as Prisma.QueryMode,
+      },
+    }));
+  }
+
+  const orderBy: Prisma.UserOrderByWithRelationInput = {};
+
+  if (sort_by === 'name') {
+    orderBy.name = sort_order as Prisma.SortOrder;
+  } else if (sort_by === 'email') {
+    orderBy.email = sort_order as Prisma.SortOrder;
+  } else {
+    orderBy.created_at = sort_order as Prisma.SortOrder;
+  }
+
+  const total = await prisma.user.count({
+    where: whereConditions,
+  });
+
+  const counselors = await prisma.user.findMany({
+    where: whereConditions,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      specialization: true,
+      role: true,
+      created_at: true,
+      updated_at: true,
+    },
+    orderBy,
+    skip,
+    take: limit,
+  });
+
+  return {
+    data: counselors,
+    meta: {
+      total,
+      page,
+      limit,
+    },
+  };
+};
+
 export const UserService = {
   UpdateProfilePicture,
   UpdateUserProfile,
   CreateCounselor,
+  GetCounselors,
 };

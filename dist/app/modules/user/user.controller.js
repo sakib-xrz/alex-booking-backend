@@ -18,6 +18,7 @@ const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const user_services_1 = require("./user.services");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
+const pick_1 = __importDefault(require("../../utils/pick"));
 const UpdateProfilePicture = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.file) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Image is required');
@@ -48,8 +49,26 @@ const CreateCounselor = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
+const GetCounselors = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const filters = (0, pick_1.default)(req.query, ['search']);
+    const paginationOptions = (0, pick_1.default)(req.query, [
+        'page',
+        'limit',
+        'sort_by',
+        'sort_order',
+    ]);
+    const result = yield user_services_1.UserService.GetCounselors(filters, paginationOptions);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Counselors retrieved successfully',
+        data: result.data,
+        meta: result.meta,
+    });
+}));
 exports.UserController = {
     UpdateProfilePicture,
     UpdateProfile,
     CreateCounselor,
+    GetCounselors,
 };

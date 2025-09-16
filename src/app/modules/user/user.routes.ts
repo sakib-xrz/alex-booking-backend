@@ -17,6 +17,8 @@ router.post(
   UserController.CreateCounselor,
 );
 
+router.get('/counselors', auth(Role.SUPER_ADMIN), UserController.GetCounselors);
+
 // Routes that require SUPER_ADMIN or COUNSELOR access
 router.use(auth(Role.SUPER_ADMIN, Role.COUNSELOR));
 

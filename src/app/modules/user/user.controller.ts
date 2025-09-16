@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import { UserService } from './user.services';
 import AppError from '../../errors/AppError';
+import pick from '../../utils/pick';
 
 const UpdateProfilePicture = catchAsync(async (req, res) => {
   if (!req.file) {
@@ -38,8 +39,27 @@ const CreateCounselor = catchAsync(async (req, res) => {
   });
 });
 
+const GetCounselors = catchAsync(async (req, res) => {
+  const filters = pick(req.query, ['search']);
+  const paginationOptions = pick(req.query, [
+    'page',
+    'limit',
+    'sort_by',
+    'sort_order',
+  ]);
+  const result = await UserService.GetCounselors(filters, paginationOptions);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Counselors retrieved successfully',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 export const UserController = {
   UpdateProfilePicture,
   UpdateProfile,
   CreateCounselor,
+  GetCounselors,
 };

@@ -23,6 +23,8 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const config_1 = __importDefault(require("../../config"));
 const user_utils_1 = __importDefault(require("./user.utils"));
 const mailer_1 = __importDefault(require("../../utils/mailer"));
+const pagination_1 = __importDefault(require("../../utils/pagination"));
+const user_constant_1 = require("./user.constant");
 const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.default.user.findUnique({
         where: { id, is_deleted: false },
@@ -127,8 +129,61 @@ const CreateCounselor = (payload) => __awaiter(void 0, void 0, void 0, function*
     }));
     return newCounselor;
 });
+const GetCounselors = (filters, paginationOptions) => __awaiter(void 0, void 0, void 0, function* () {
+    const { page, limit, skip, sort_by, sort_order } = (0, pagination_1.default)(paginationOptions);
+    const { search } = filters;
+    const whereConditions = {
+        role: client_1.Role.COUNSELOR,
+        is_deleted: false,
+    };
+    if (search) {
+        whereConditions.OR = user_constant_1.counselorSearchableFields.map((field) => ({
+            [field]: {
+                contains: search,
+                mode: 'insensitive',
+            },
+        }));
+    }
+    const orderBy = {};
+    if (sort_by === 'name') {
+        orderBy.name = sort_order;
+    }
+    else if (sort_by === 'email') {
+        orderBy.email = sort_order;
+    }
+    else {
+        orderBy.created_at = sort_order;
+    }
+    const total = yield prisma_1.default.user.count({
+        where: whereConditions,
+    });
+    const counselors = yield prisma_1.default.user.findMany({
+        where: whereConditions,
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            specialization: true,
+            role: true,
+            created_at: true,
+            updated_at: true,
+        },
+        orderBy,
+        skip,
+        take: limit,
+    });
+    return {
+        data: counselors,
+        meta: {
+            total,
+            page,
+            limit,
+        },
+    };
+});
 exports.UserService = {
     UpdateProfilePicture,
     UpdateUserProfile,
     CreateCounselor,
+    GetCounselors,
 };
