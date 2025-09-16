@@ -36,8 +36,6 @@ const Register = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     });
     const jwtPayload = {
         id: result.id,
-        name: result.name,
-        profile_picture: result.profile_picture,
         email: result.email,
         role: result.role,
     };
@@ -57,8 +55,6 @@ const Login = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     }
     const jwtPayload = {
         id: user.id,
-        name: user.name,
-        profile_picture: user.profile_picture,
         email: user.email,
         role: user.role,
     };
@@ -91,6 +87,7 @@ const GetMyProfile = (user) => __awaiter(void 0, void 0, void 0, function* () {
             name: true,
             role: true,
             profile_picture: true,
+            specialization: true,
             created_at: true,
         },
     });

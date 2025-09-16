@@ -1,0 +1,991 @@
+{
+  "info": {
+    "_postman_id": "alex-booking-api-collection",
+    "name": "Alex Rodriguez Booking API",
+    "description": "Comprehensive API collection for Alex Rodriguez booking backend system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "alex-booking-system"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Admin/Counselor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new admin or counselor user"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('auth_token', response.data.token);",
+                  "    pm.environment.set('user_id', response.data.user.id);",
+                  "    pm.environment.set('user_role', response.data.user.role);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"info@alexrodriguez.com.au\",\n  \"password\": \"Alexande11!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login with email and password"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Get current user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"currentPassword123!\",\n  \"new_password\": \"newPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "change-password"]
+            },
+            "description": "Change user password"
+          },
+          "response": []
+        }
+      ],
+      "description": "Authentication related endpoints"
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Create Counselor (Super Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Jane Smith\",\n  \"email\": \"jane.smith@example.com\",\n  \"specialization\": \"Clinical Psychology\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/create-counselor",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "create-counselor"]
+            },
+            "description": "Create a new counselor (requires SUPER_ADMIN role)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "profile"]
+            },
+            "description": "Update user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile Picture",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/profile/picture",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "profile", "picture"]
+            },
+            "description": "Update user profile picture"
+          },
+          "response": []
+        }
+      ],
+      "description": "User management endpoints"
+    },
+    {
+      "name": "Calendar Management",
+      "item": [
+        {
+          "name": "Get Calendars",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars"]
+            },
+            "description": "Get all calendar dates for the authenticated counselor"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Calendar Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-12-25T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars"]
+            },
+            "description": "Create a new calendar date"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Slots with Calendar Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars/slots",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars", "slots"]
+            },
+            "description": "Get all slots with calendar date information"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Slots with Calendar Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-12-25T00:00:00.000Z\",\n  \"slots\": [\n    {\n      \"start_time\": \"09:00\",\n      \"end_time\": \"10:00\",\n      \"type\": \"ONLINE\"\n    },\n    {\n      \"start_time\": \"10:00\",\n      \"end_time\": \"11:00\",\n      \"type\": \"IN_PERSON\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars/slots",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars", "slots"]
+            },
+            "description": "Create slots with calendar date"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Date Slots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars/{{calendar_id}}/slots",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars", "{{calendar_id}}", "slots"]
+            },
+            "description": "Get slots for a specific calendar date"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Date Slots",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": [\n    {\n      \"start_time\": \"14:00\",\n      \"end_time\": \"15:00\",\n      \"type\": \"ONLINE\"\n    },\n    {\n      \"start_time\": \"15:00\",\n      \"end_time\": \"16:00\",\n      \"type\": \"IN_PERSON\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars/{{calendar_id}}/slots",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars", "{{calendar_id}}", "slots"]
+            },
+            "description": "Create slots for a specific calendar date"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Time Slot",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendars/slots/{{slot_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendars", "slots", "{{slot_id}}"]
+            },
+            "description": "Delete a specific time slot"
+          },
+          "response": []
+        }
+      ],
+      "description": "Calendar and time slot management"
+    },
+    {
+      "name": "Client Management",
+      "item": [
+        {
+          "name": "Get Counselor Clients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients?search=&page=1&limit=10&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "created_at"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Get all clients for counselor with search, filter, sort, pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client Details with History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/clients/{{client_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "clients", "{{client_id}}"]
+            },
+            "description": "Get specific client details with appointment history"
+          },
+          "response": []
+        }
+      ],
+      "description": "Client management endpoints"
+    },
+    {
+      "name": "Appointment Management",
+      "item": [
+        {
+          "name": "Get Counselor Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/appointments?search=&session_type=ONLINE&status=PENDING&date=2024-12-25&page=1&limit=10&sort_by=date&sort_order=asc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "appointments"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "session_type",
+                  "value": "ONLINE"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                },
+                {
+                  "key": "date",
+                  "value": "2024-12-25"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "date"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "asc"
+                }
+              ]
+            },
+            "description": "Get counselor appointments with filters and pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "appointments", "{{appointment_id}}"]
+            },
+            "description": "Get specific appointment details"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/appointments/{{appointment_id}}/completed",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointment_id}}",
+                "completed"
+              ]
+            },
+            "description": "Mark appointment as completed"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/appointments/{{appointment_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointment_id}}",
+                "cancel"
+              ]
+            },
+            "description": "Cancel an appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newTimeSlotId\": \"uuid-of-new-time-slot\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/appointments/{{appointment_id}}/reschedule",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointment_id}}",
+                "reschedule"
+              ]
+            },
+            "description": "Reschedule an appointment to a new time slot"
+          },
+          "response": []
+        }
+      ],
+      "description": "Appointment management for counselors"
+    },
+    {
+      "name": "Public Calendar (No Auth Required)",
+      "item": [
+        {
+          "name": "Get Counselor Calendar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public-calenders/{{counselor_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "public-calenders", "{{counselor_id}}"]
+            },
+            "description": "Get public calendar for a counselor"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Counselor Date Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public-calenders/{{counselor_id}}/slots/{{date}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "public-calenders",
+                "{{counselor_id}}",
+                "slots",
+                "{{date}}"
+              ]
+            },
+            "description": "Get available slots for a counselor on a specific date"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Counselor Calendar Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public-calenders/slots/{{calendar_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "public-calenders",
+                "slots",
+                "{{calendar_id}}"
+              ]
+            },
+            "description": "Get slots for a specific calendar"
+          },
+          "response": []
+        }
+      ],
+      "description": "Public calendar endpoints for client booking"
+    },
+    {
+      "name": "Public Appointments (No Auth Required)",
+      "item": [
+        {
+          "name": "Create Public Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+61412345678\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"gender\": \"MALE\",\n  \"sessionType\": \"ONLINE\",\n  \"date\": \"2024-12-25\",\n  \"timeSlotId\": \"uuid-of-time-slot\",\n  \"notes\": \"First time client seeking anxiety counseling\",\n  \"counselorId\": \"uuid-of-counselor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/public-appointments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "public-appointments"]
+            },
+            "description": "Create a new appointment (public booking)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Appointment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public-appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "public-appointments", "{{appointment_id}}"]
+            },
+            "description": "Get appointment details by ID"
+          },
+          "response": []
+        }
+      ],
+      "description": "Public appointment booking for clients"
+    },
+    {
+      "name": "OTP Verification",
+      "item": [
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/otp/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "otp", "send"]
+            },
+            "description": "Send OTP to email address"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"client@example.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/otp/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "otp", "verify"]
+            },
+            "description": "Verify OTP code"
+          },
+          "response": []
+        }
+      ],
+      "description": "Email OTP verification system"
+    },
+    {
+      "name": "Payment Management",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointment_id\": \"uuid-of-appointment\",\n  \"amount\": 150.00,\n  \"currency\": \"AUD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create-intent",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create-intent"]
+            },
+            "description": "Create a Stripe payment intent for an appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment by Appointment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/appointment/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "appointment",
+                "{{appointment_id}}"
+              ]
+            },
+            "description": "Get payment information for a specific appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Stripe-Signature",
+                "value": "webhook_signature"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_1234567890\",\n  \"object\": \"event\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_1234567890\",\n      \"amount\": 15000,\n      \"currency\": \"aud\",\n      \"status\": \"succeeded\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "webhook"]
+            },
+            "description": "Stripe webhook endpoint for payment events"
+          },
+          "response": []
+        }
+      ],
+      "description": "Payment processing with Stripe"
+    },
+    {
+      "name": "Google Integration",
+      "item": [
+        {
+          "name": "Get Google Auth URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/google/auth-url",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "google", "auth-url"]
+            },
+            "description": "Get Google OAuth URL for calendar integration"
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/google/callback?code=google_auth_code&state=user_state",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "google_auth_code"
+                },
+                {
+                  "key": "state",
+                  "value": "user_state"
+                }
+              ]
+            },
+            "description": "Handle Google OAuth callback (redirected by Google)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Calendar Connection Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/google/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "google", "status"]
+            },
+            "description": "Get Google Calendar connection status"
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect Google Calendar",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/google/disconnect",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "google", "disconnect"]
+            },
+            "description": "Disconnect Google Calendar integration"
+          },
+          "response": []
+        }
+      ],
+      "description": "Google Calendar integration endpoints"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "counselor_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "appointment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "calendar_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slot_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "date",
+      "value": "2024-12-25",
+      "type": "string"
+    }
+  ]
+}

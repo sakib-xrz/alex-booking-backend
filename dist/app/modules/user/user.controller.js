@@ -39,7 +39,17 @@ const UpdateProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
+const CreateCounselor = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_services_1.UserService.CreateCounselor(req.body);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.CREATED,
+        message: 'Counselor created successfully',
+        data: result,
+    });
+}));
 exports.UserController = {
     UpdateProfilePicture,
     UpdateProfile,
+    CreateCounselor,
 };

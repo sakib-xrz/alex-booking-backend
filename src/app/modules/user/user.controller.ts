@@ -28,7 +28,18 @@ const UpdateProfile = catchAsync(async (req, res) => {
   });
 });
 
+const CreateCounselor = catchAsync(async (req, res) => {
+  const result = await UserService.CreateCounselor(req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.CREATED,
+    message: 'Counselor created successfully',
+    data: result,
+  });
+});
+
 export const UserController = {
   UpdateProfilePicture,
   UpdateProfile,
+  CreateCounselor,
 };

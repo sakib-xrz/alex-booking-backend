@@ -58,6 +58,7 @@ model User {
   email                 String    @unique
   password              String
   role                  Role      @default(COUNSELOR)
+  specialization        String?
   profile_picture       String?
   google_access_token   String?
   google_refresh_token  String?

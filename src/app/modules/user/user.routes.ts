@@ -9,6 +9,15 @@ import multer from 'multer';
 const router = express.Router();
 const upload = multer();
 
+// Routes that require SUPER_ADMIN access only
+router.post(
+  '/create-counselor',
+  auth(Role.SUPER_ADMIN),
+  validateRequest(UserValidation.createCounselorSchema),
+  UserController.CreateCounselor,
+);
+
+// Routes that require SUPER_ADMIN or COUNSELOR access
 router.use(auth(Role.SUPER_ADMIN, Role.COUNSELOR));
 
 router.patch(

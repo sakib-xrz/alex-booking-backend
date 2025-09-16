@@ -18,6 +18,11 @@ const path_1 = __importDefault(require("path"));
 const handelFile_1 = require("../../utils/handelFile");
 const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
+const client_1 = require("@prisma/client");
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const config_1 = __importDefault(require("../../config"));
+const user_utils_1 = __importDefault(require("./user.utils"));
+const mailer_1 = __importDefault(require("../../utils/mailer"));
 const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.default.user.findUnique({
         where: { id, is_deleted: false },
@@ -50,6 +55,7 @@ const UpdateProfilePicture = (id, file) => __awaiter(void 0, void 0, void 0, fun
             id: true,
             name: true,
             email: true,
+            specialization: true,
             profile_picture: true,
             role: true,
             created_at: true,
@@ -72,6 +78,7 @@ const UpdateUserProfile = (id, data) => __awaiter(void 0, void 0, void 0, functi
             id: true,
             name: true,
             email: true,
+            specialization: true,
             profile_picture: true,
             role: true,
             created_at: true,
@@ -80,7 +87,48 @@ const UpdateUserProfile = (id, data) => __awaiter(void 0, void 0, void 0, functi
     });
     return result;
 });
+const CreateCounselor = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name, email, specialization } = payload;
+    const existingUser = yield prisma_1.default.user.findUnique({
+        where: { email },
+    });
+    if (existingUser) {
+        throw new AppError_1.default(http_status_1.default.CONFLICT, 'User with this email already exists');
+    }
+    const randomPassword = user_utils_1.default.generateRandomPassword();
+    const hashedPassword = yield bcrypt_1.default.hash(randomPassword, Number(config_1.default.bcrypt_salt_rounds));
+    const newCounselor = yield prisma_1.default.user.create({
+        data: {
+            name,
+            email,
+            password: hashedPassword,
+            role: client_1.Role.COUNSELOR,
+            specialization: specialization || null,
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            specialization: true,
+            role: true,
+            created_at: true,
+            updated_at: true,
+        },
+    });
+    Promise.resolve().then(() => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const emailTemplate = user_utils_1.default.createCounselorEmailTemplate(name, email, randomPassword);
+            yield (0, mailer_1.default)(email, 'Welcome to Alexander Rodriguez Counseling - Your Account Credentials', emailTemplate);
+            console.log(`Welcome email sent successfully to ${email}`);
+        }
+        catch (error) {
+            console.error(`Failed to send welcome email to ${email}:`, error);
+        }
+    }));
+    return newCounselor;
+});
 exports.UserService = {
     UpdateProfilePicture,
     UpdateUserProfile,
+    CreateCounselor,
 };

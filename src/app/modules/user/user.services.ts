@@ -7,6 +7,11 @@ import {
 } from '../../utils/handelFile';
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
+import { Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import config from '../../config';
+import UserUtils from './user.utils';
+import sendMail from '../../utils/mailer';
 
 const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
   const user = await prisma.user.findUnique({
@@ -50,6 +55,7 @@ const UpdateProfilePicture = async (id: string, file: Express.Multer.File) => {
       id: true,
       name: true,
       email: true,
+      specialization: true,
       profile_picture: true,
       role: true,
       created_at: true,
@@ -76,6 +82,7 @@ const UpdateUserProfile = async (id: string, data: { name?: string }) => {
       id: true,
       name: true,
       email: true,
+      specialization: true,
       profile_picture: true,
       role: true,
       created_at: true,
@@ -86,7 +93,80 @@ const UpdateUserProfile = async (id: string, data: { name?: string }) => {
   return result;
 };
 
+const CreateCounselor = async (payload: {
+  name: string;
+  email: string;
+  specialization?: string;
+}) => {
+  const { name, email, specialization } = payload;
+
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      'User with this email already exists',
+    );
+  }
+
+  // Generate random password
+  const randomPassword = UserUtils.generateRandomPassword();
+
+  // Hash the password
+  const hashedPassword = await bcrypt.hash(
+    randomPassword,
+    Number(config.bcrypt_salt_rounds),
+  );
+
+  // Create counselor
+  const newCounselor = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      role: Role.COUNSELOR,
+      specialization: specialization || null,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      specialization: true,
+      role: true,
+      created_at: true,
+      updated_at: true,
+    },
+  });
+
+  // Send email with credentials in background (non-blocking)
+  Promise.resolve().then(async () => {
+    try {
+      const emailTemplate = UserUtils.createCounselorEmailTemplate(
+        name,
+        email,
+        randomPassword,
+      );
+
+      await sendMail(
+        email,
+        'Welcome to Alexander Rodriguez Counseling - Your Account Credentials',
+        emailTemplate,
+      );
+
+      console.log(`Welcome email sent successfully to ${email}`);
+    } catch (error) {
+      console.error(`Failed to send welcome email to ${email}:`, error);
+    }
+  });
+
+  return newCounselor;
+};
+
 export const UserService = {
   UpdateProfilePicture,
   UpdateUserProfile,
+  CreateCounselor,
 };
