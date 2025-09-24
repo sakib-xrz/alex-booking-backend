@@ -21,7 +21,7 @@ const spacesClient = new S3Client({
   },
 });
 
-const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx/;
+const allowedTypes = /jpeg|jpg|png|gif|webp|heic|heif|pdf|doc|docx/;
 
 const storage = multer.memoryStorage();
 
@@ -30,17 +30,34 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ) => {
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase(),
-  );
-  const mimetype = allowedTypes.test(file.mimetype);
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  const extname = allowedTypes.test(fileExtension);
+
+  // HEIC/HEIF files have specific MIME types that need special handling
+  const heicMimeTypes = [
+    'image/heic',
+    'image/heif',
+    'image/heic-sequence',
+    'image/heif-sequence',
+  ];
+  const isHeicFile = heicMimeTypes.includes(file.mimetype.toLowerCase());
+
+  // Handle HEIC files that might be sent as application/octet-stream
+  const isHeicExtensionWithGenericMime =
+    (fileExtension === '.heic' || fileExtension === '.heif') &&
+    file.mimetype === 'application/octet-stream';
+
+  const mimetype =
+    allowedTypes.test(file.mimetype) ||
+    isHeicFile ||
+    isHeicExtensionWithGenericMime;
 
   if (extname && mimetype) {
     cb(null, true);
   } else {
     cb(
       new Error(
-        'Only images (jpeg, jpg, png, gif), PDFs, and DOC/DOCX files are allowed',
+        'Only images (jpeg, jpg, png, gif, webp, heic, heif), PDFs, and DOC/DOCX files are allowed',
       ),
     );
   }
@@ -52,12 +69,60 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 },
 });
 
+const convertHeicToJpeg = async (
+  buffer: Buffer,
+): Promise<{ buffer: Buffer; mimetype: string }> => {
+  try {
+    // Dynamically import heic-convert to avoid module resolution issues
+    const convert = await import('heic-convert');
+
+    // Convert HEIC to JPEG using heic-convert
+    const convertedBuffer = await convert.default({
+      buffer: buffer,
+      format: 'JPEG',
+      quality: 0.9, // 90% quality
+    });
+
+    // Convert the result to Buffer if it's not already
+    const finalBuffer = Buffer.isBuffer(convertedBuffer)
+      ? convertedBuffer
+      : Buffer.from(convertedBuffer);
+
+    return {
+      buffer: finalBuffer,
+      mimetype: 'image/jpeg',
+    };
+  } catch (error) {
+    console.error('Error converting HEIC to JPEG:', error);
+    throw new Error(`HEIC conversion failed: ${error}`);
+  }
+};
+
 const uploadToSpaces = async (
   file: Express.Multer.File,
   options: { folder?: string; filename?: string } = {},
 ): Promise<{ url: string; key: string }> => {
   try {
-    const fileExtension = path.extname(file.originalname);
+    let fileBuffer = file.buffer;
+    let contentType = file.mimetype;
+    let fileExtension = path.extname(file.originalname);
+
+    // Check if file is HEIC and convert to JPEG
+    const isHeicFile =
+      fileExtension.toLowerCase() === '.heic' ||
+      fileExtension.toLowerCase() === '.heif' ||
+      (file.mimetype === 'application/octet-stream' &&
+        (fileExtension.toLowerCase() === '.heic' ||
+          fileExtension.toLowerCase() === '.heif'));
+
+    if (isHeicFile) {
+      console.log('Converting HEIC file to JPEG...');
+      const converted = await convertHeicToJpeg(fileBuffer);
+      fileBuffer = converted.buffer;
+      contentType = converted.mimetype;
+      fileExtension = '.jpg'; // Change extension to jpg
+    }
+
     const fileName = options.filename || `${uuidv4()}${fileExtension}`;
     const folder = options.folder || 'uploads';
     const key = `${folder}/${fileName}`;
@@ -65,8 +130,8 @@ const uploadToSpaces = async (
     const uploadParams = {
       Bucket: config.digitalocean.spaces_bucket!,
       Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+      Body: fileBuffer,
+      ContentType: contentType,
       ACL: 'public-read' as const,
     };
 
@@ -174,5 +239,6 @@ export {
   deleteMultipleFromSpaces,
   extractKeyFromUrl,
   generateSignedUrl,
+  convertHeicToJpeg,
   spacesClient,
 };
