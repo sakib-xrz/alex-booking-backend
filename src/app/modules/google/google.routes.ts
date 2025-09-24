@@ -22,6 +22,20 @@ router.get(
   GoogleController.getCalendarStatus,
 );
 
+// Debug: Get user's Google data from database
+router.get(
+  '/debug',
+  auth(Role.COUNSELOR, Role.SUPER_ADMIN),
+  GoogleController.debugUserGoogleData,
+);
+
+// Force refresh Google account info
+router.post(
+  '/refresh-account-info',
+  auth(Role.COUNSELOR, Role.SUPER_ADMIN),
+  GoogleController.refreshGoogleAccountInfo,
+);
+
 // Disconnect Google Calendar (only for counselors/doctors)
 router.delete(
   '/disconnect',

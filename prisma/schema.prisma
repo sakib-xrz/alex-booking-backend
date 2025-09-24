@@ -53,20 +53,23 @@ enum MeetingPlatform {
 }
 
 model User {
-  id                    String    @id @default(uuid())
-  name                  String
-  email                 String    @unique
-  password              String
-  role                  Role      @default(COUNSELOR)
-  specialization        String?
-  profile_picture       String?
-  google_access_token   String?
-  google_refresh_token  String?
-  google_token_expiry   DateTime?
-  is_calendar_connected Boolean   @default(false)
-  is_deleted            Boolean   @default(false)
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @updatedAt
+  id                     String    @id @default(uuid())
+  name                   String
+  email                  String    @unique
+  password               String
+  role                   Role      @default(COUNSELOR)
+  specialization         String?
+  profile_picture        String?
+  google_access_token    String?
+  google_refresh_token   String?
+  google_token_expiry    DateTime?
+  google_account_name    String? // Google account name
+  google_account_email   String? // Google account email
+  google_account_picture String? // Google account picture URL
+  is_calendar_connected  Boolean   @default(false)
+  is_deleted             Boolean   @default(false)
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
 
   // Relations
   calendars    Calendar[]

@@ -39,16 +39,45 @@ const handleGoogleCallback = (0, catchAsync_1.default)((req, res) => __awaiter(v
     }
     yield google_services_1.default.handleOAuthCallback(code, userId);
     const frontendUrl = config_1.default.base_url.admin_frontend;
-    res.redirect(`${frontendUrl}/dashboard?calendar=connected`);
+    res.redirect(`${frontendUrl}/settings?calendar=connected`);
 }));
 const getCalendarStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const userId = req.user.id;
-    const isConnected = yield google_services_1.default.isCalendarConnected(userId);
+    console.log(`Getting calendar status for user: ${userId}`);
+    const connectionInfo = yield google_services_1.default.getCalendarConnectionInfo(userId);
+    console.log('Calendar connection info:', {
+        isConnected: connectionInfo.isConnected,
+        hasConnectedAccount: !!connectionInfo.connectedAccount,
+        accountName: (_a = connectionInfo.connectedAccount) === null || _a === void 0 ? void 0 : _a.name,
+        accountEmail: (_b = connectionInfo.connectedAccount) === null || _b === void 0 ? void 0 : _b.email,
+    });
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Calendar connection status retrieved successfully',
-        data: { isConnected },
+        data: connectionInfo,
+    });
+}));
+const debugUserGoogleData = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const user = yield google_services_1.default.getUserGoogleData(userId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'User Google data retrieved',
+        data: user,
+    });
+}));
+const refreshGoogleAccountInfo = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    console.log(`Force refreshing Google account info for user: ${userId}`);
+    const result = yield google_services_1.default.forceRefreshGoogleAccountInfo(userId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Google account info refreshed successfully',
+        data: result,
     });
 }));
 const disconnectCalendar = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -65,6 +94,8 @@ const GoogleController = {
     getGoogleAuthUrl,
     handleGoogleCallback,
     getCalendarStatus,
+    debugUserGoogleData,
+    refreshGoogleAccountInfo,
     disconnectCalendar,
 };
 exports.default = GoogleController;

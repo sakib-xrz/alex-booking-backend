@@ -12,5 +12,7 @@ const router = express_1.default.Router();
 router.get('/auth-url', (0, auth_1.default)(client_1.Role.COUNSELOR, client_1.Role.SUPER_ADMIN), google_controller_1.default.getGoogleAuthUrl);
 router.get('/callback', google_controller_1.default.handleGoogleCallback);
 router.get('/status', (0, auth_1.default)(client_1.Role.COUNSELOR, client_1.Role.SUPER_ADMIN), google_controller_1.default.getCalendarStatus);
+router.get('/debug', (0, auth_1.default)(client_1.Role.COUNSELOR, client_1.Role.SUPER_ADMIN), google_controller_1.default.debugUserGoogleData);
+router.post('/refresh-account-info', (0, auth_1.default)(client_1.Role.COUNSELOR, client_1.Role.SUPER_ADMIN), google_controller_1.default.refreshGoogleAccountInfo);
 router.delete('/disconnect', (0, auth_1.default)(client_1.Role.COUNSELOR, client_1.Role.SUPER_ADMIN), google_controller_1.default.disconnectCalendar);
 exports.GoogleRoutes = router;

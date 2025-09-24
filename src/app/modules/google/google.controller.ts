@@ -47,14 +47,54 @@ const handleGoogleCallback = catchAsync(async (req, res) => {
 // Get Google Calendar connection status
 const getCalendarStatus = catchAsync(async (req, res) => {
   const userId = req.user.id;
+
+  console.log(`Getting calendar status for user: ${userId}`);
+
   const connectionInfo =
     await GoogleOAuthService.getCalendarConnectionInfo(userId);
+
+  console.log('Calendar connection info:', {
+    isConnected: connectionInfo.isConnected,
+    hasConnectedAccount: !!connectionInfo.connectedAccount,
+    accountName: connectionInfo.connectedAccount?.name,
+    accountEmail: connectionInfo.connectedAccount?.email,
+  });
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Calendar connection status retrieved successfully',
     data: connectionInfo,
+  });
+});
+
+// Debug: Get current user's Google data from database
+const debugUserGoogleData = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+
+  const user = await GoogleOAuthService.getUserGoogleData(userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'User Google data retrieved',
+    data: user,
+  });
+});
+
+// Force refresh Google account info
+const refreshGoogleAccountInfo = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+
+  console.log(`Force refreshing Google account info for user: ${userId}`);
+
+  const result = await GoogleOAuthService.forceRefreshGoogleAccountInfo(userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Google account info refreshed successfully',
+    data: result,
   });
 });
 
@@ -75,6 +115,8 @@ const GoogleController = {
   getGoogleAuthUrl,
   handleGoogleCallback,
   getCalendarStatus,
+  debugUserGoogleData,
+  refreshGoogleAccountInfo,
   disconnectCalendar,
 };
 
