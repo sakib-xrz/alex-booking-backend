@@ -170,6 +170,61 @@ const isCalendarConnected = async (userId: string): Promise<boolean> => {
   return user?.is_calendar_connected || false;
 };
 
+// Get Google account profile information
+const getGoogleAccountInfo = async (userId: string) => {
+  try {
+    const accessToken = await getValidAccessToken(userId);
+
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+    });
+
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const { data } = await oauth2.userinfo.get();
+
+    return {
+      name: data.name,
+      email: data.email,
+      picture: data.picture,
+    };
+  } catch (error) {
+    console.error('Error fetching Google account info:', error);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to fetch Google account information',
+    );
+  }
+};
+
+// Get calendar connection status with Google account info
+const getCalendarConnectionInfo = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      is_calendar_connected: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  let connectedAccount = null;
+  if (user.is_calendar_connected) {
+    try {
+      connectedAccount = await getGoogleAccountInfo(userId);
+    } catch (error) {
+      // If we can't fetch Google account info, still return connection status
+      console.error('Failed to fetch Google account info:', error);
+    }
+  }
+
+  return {
+    isConnected: user.is_calendar_connected,
+    connectedAccount,
+  };
+};
+
 // Disconnect Google Calendar
 const disconnectCalendar = async (userId: string) => {
   await prisma.user.update({
@@ -192,6 +247,8 @@ const GoogleOAuthService = {
   getValidAccessToken,
   getCalendarClient,
   isCalendarConnected,
+  getGoogleAccountInfo,
+  getCalendarConnectionInfo,
   disconnectCalendar,
 };
 

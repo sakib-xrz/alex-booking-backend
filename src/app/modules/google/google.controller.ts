@@ -41,19 +41,20 @@ const handleGoogleCallback = catchAsync(async (req, res) => {
 
   // Redirect to frontend with success message
   const frontendUrl = config.base_url.admin_frontend;
-  res.redirect(`${frontendUrl}/dashboard?calendar=connected`);
+  res.redirect(`${frontendUrl}/settings?calendar=connected`);
 });
 
 // Get Google Calendar connection status
 const getCalendarStatus = catchAsync(async (req, res) => {
   const userId = req.user.id;
-  const isConnected = await GoogleOAuthService.isCalendarConnected(userId);
+  const connectionInfo =
+    await GoogleOAuthService.getCalendarConnectionInfo(userId);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Calendar connection status retrieved successfully',
-    data: { isConnected },
+    data: connectionInfo,
   });
 });
 
