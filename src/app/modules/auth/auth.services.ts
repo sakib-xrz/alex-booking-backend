@@ -6,6 +6,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../errors/AppError';
 import prisma from '../../utils/prisma';
 import AuthUtils from './auth.utils';
+import { deleteFromSpaces, extractKeyFromUrl } from '../../utils/handelFile';
 
 const Register = async (payload: User) => {
   const { email, password, name } = payload;
@@ -186,12 +187,54 @@ const UpdateProfile = async (
   return updatedUser;
 };
 
+const DeleteProfilePicture = async (user: JwtPayload) => {
+  const userExists = await prisma.user.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!userExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  if (!userExists.profile_picture) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'No profile picture to delete');
+  }
+
+  // Delete the file from DigitalOcean Spaces
+  const key = extractKeyFromUrl(userExists.profile_picture);
+  if (key) {
+    try {
+      await deleteFromSpaces(key);
+    } catch (error) {
+      console.error('Failed to delete profile picture from storage:', error);
+    }
+  }
+
+  // Update user record to remove profile picture
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: { profile_picture: null },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      profile_picture: true,
+      specialization: true,
+      created_at: true,
+    },
+  });
+
+  return updatedUser;
+};
+
 const AuthService = {
   Register,
   Login,
   ChangePassword,
   GetMyProfile,
   UpdateProfile,
+  DeleteProfilePicture,
 };
 
 export default AuthService;

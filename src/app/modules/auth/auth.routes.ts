@@ -41,4 +41,10 @@ router.patch(
   AuthController.UpdateProfile,
 );
 
+router.delete(
+  '/profile-picture',
+  auth(Role.SUPER_ADMIN, Role.COUNSELOR),
+  AuthController.DeleteProfilePicture,
+);
+
 export const AuthRoutes = router;

@@ -2,7 +2,11 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import AuthService from './auth.services';
-import { uploadToSpaces, extractKeyFromUrl, deleteFromSpaces } from '../../utils/handelFile';
+import {
+  uploadToSpaces,
+  extractKeyFromUrl,
+  deleteFromSpaces,
+} from '../../utils/handelFile';
 
 const Register = catchAsync(async (req, res) => {
   const result = await AuthService.Register(req.body);
@@ -62,7 +66,7 @@ const UpdateProfile = catchAsync(async (req, res) => {
   if (req.file) {
     // Get current user to check if they have an existing profile picture
     const currentUser = await AuthService.GetMyProfile(req.user);
-    
+
     // Delete old profile picture if it exists
     if (currentUser.profile_picture) {
       const oldKey = extractKeyFromUrl(currentUser.profile_picture);
@@ -96,11 +100,23 @@ const UpdateProfile = catchAsync(async (req, res) => {
   });
 });
 
+const DeleteProfilePicture = catchAsync(async (req, res) => {
+  const result = await AuthService.DeleteProfilePicture(req.user);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Profile picture deleted successfully',
+    data: result,
+  });
+});
+
 const AuthController = {
   Login,
   ChangePassword,
   GetMyProfile,
   UpdateProfile,
+  DeleteProfilePicture,
   Register,
 };
 
