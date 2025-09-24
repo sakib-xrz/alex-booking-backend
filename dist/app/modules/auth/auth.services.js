@@ -18,6 +18,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const auth_utils_1 = __importDefault(require("./auth.utils"));
+const handelFile_1 = require("../../utils/handelFile");
 const Register = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password, name } = payload;
     const existingUser = yield prisma_1.default.user.findUnique({
@@ -128,11 +129,46 @@ const UpdateProfile = (payload, profilePicture, user) => __awaiter(void 0, void 
     });
     return updatedUser;
 });
+const DeleteProfilePicture = (user) => __awaiter(void 0, void 0, void 0, function* () {
+    const userExists = yield prisma_1.default.user.findUnique({
+        where: { id: user.id },
+    });
+    if (!userExists) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
+    }
+    if (!userExists.profile_picture) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'No profile picture to delete');
+    }
+    const key = (0, handelFile_1.extractKeyFromUrl)(userExists.profile_picture);
+    if (key) {
+        try {
+            yield (0, handelFile_1.deleteFromSpaces)(key);
+        }
+        catch (error) {
+            console.error('Failed to delete profile picture from storage:', error);
+        }
+    }
+    const updatedUser = yield prisma_1.default.user.update({
+        where: { id: user.id },
+        data: { profile_picture: null },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            profile_picture: true,
+            specialization: true,
+            created_at: true,
+        },
+    });
+    return updatedUser;
+});
 const AuthService = {
     Register,
     Login,
     ChangePassword,
     GetMyProfile,
     UpdateProfile,
+    DeleteProfilePicture,
 };
 exports.default = AuthService;

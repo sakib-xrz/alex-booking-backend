@@ -17,4 +17,5 @@ router.post('/login', (0, validateRequest_1.default)(auth_validation_1.default.L
 router.patch('/change-password', (0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELOR), (0, validateRequest_1.default)(auth_validation_1.default.ChangePasswordSchema), auth_controller_1.default.ChangePassword);
 router.get('/me', (0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELOR), auth_controller_1.default.GetMyProfile);
 router.patch('/profile', (0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELOR), handelFile_1.upload.single('profile_picture'), (0, validateRequest_1.default)(auth_validation_1.default.UpdateProfileSchema), auth_controller_1.default.UpdateProfile);
+router.delete('/profile-picture', (0, auth_1.default)(client_1.Role.SUPER_ADMIN, client_1.Role.COUNSELOR), auth_controller_1.default.DeleteProfilePicture);
 exports.AuthRoutes = router;
