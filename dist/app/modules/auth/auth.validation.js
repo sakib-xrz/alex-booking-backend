@@ -43,5 +43,15 @@ const ChangePasswordSchema = zod_1.z.object({
         }),
     }),
 });
-const AuthValidation = { LoginSchema, ChangePasswordSchema, RegisterSchema };
+const UpdateProfileSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        name: zod_1.z.string({
+            invalid_type_error: 'Name must be a string',
+        }).optional(),
+        specialization: zod_1.z.string({
+            invalid_type_error: 'Specialization must be a string',
+        }).optional(),
+    }),
+});
+const AuthValidation = { LoginSchema, ChangePasswordSchema, RegisterSchema, UpdateProfileSchema };
 exports.default = AuthValidation;

@@ -96,10 +96,43 @@ const GetMyProfile = (user) => __awaiter(void 0, void 0, void 0, function* () {
     }
     return userProfile;
 });
+const UpdateProfile = (payload, profilePicture, user) => __awaiter(void 0, void 0, void 0, function* () {
+    const userExists = yield prisma_1.default.user.findUnique({
+        where: { id: user.id },
+    });
+    if (!userExists) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found');
+    }
+    const updateData = {};
+    if (payload.name !== undefined) {
+        updateData.name = payload.name;
+    }
+    if (payload.specialization !== undefined) {
+        updateData.specialization = payload.specialization;
+    }
+    if (profilePicture !== undefined) {
+        updateData.profile_picture = profilePicture;
+    }
+    const updatedUser = yield prisma_1.default.user.update({
+        where: { id: user.id },
+        data: updateData,
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            profile_picture: true,
+            specialization: true,
+            created_at: true,
+        },
+    });
+    return updatedUser;
+});
 const AuthService = {
     Register,
     Login,
     ChangePassword,
     GetMyProfile,
+    UpdateProfile,
 };
 exports.default = AuthService;

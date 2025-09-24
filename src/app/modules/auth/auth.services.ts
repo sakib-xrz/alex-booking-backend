@@ -139,11 +139,59 @@ const GetMyProfile = async (user: JwtPayload) => {
   return userProfile;
 };
 
+const UpdateProfile = async (
+  payload: {
+    name?: string;
+    specialization?: string;
+  },
+  profilePicture: string | undefined,
+  user: JwtPayload,
+) => {
+  const userExists = await prisma.user.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!userExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const updateData: any = {};
+
+  if (payload.name !== undefined) {
+    updateData.name = payload.name;
+  }
+
+  if (payload.specialization !== undefined) {
+    updateData.specialization = payload.specialization;
+  }
+
+  if (profilePicture !== undefined) {
+    updateData.profile_picture = profilePicture;
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: updateData,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      profile_picture: true,
+      specialization: true,
+      created_at: true,
+    },
+  });
+
+  return updatedUser;
+};
+
 const AuthService = {
   Register,
   Login,
   ChangePassword,
   GetMyProfile,
+  UpdateProfile,
 };
 
 export default AuthService;

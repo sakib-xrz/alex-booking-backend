@@ -101,10 +101,12 @@ const handleOAuthCallback = (code, userId) => __awaiter(void 0, void 0, void 0, 
                     message: error.message || 'Unknown error',
                     code: error.code || 'No code',
                     status: error.status || 'No status',
-                    config: error.config ? {
-                        url: error.config.url,
-                        method: error.config.method,
-                    } : 'No config',
+                    config: error.config
+                        ? {
+                            url: error.config.url,
+                            method: error.config.method,
+                        }
+                        : 'No config',
                 });
             }
             console.warn('Proceeding with OAuth flow despite account info fetch failure');

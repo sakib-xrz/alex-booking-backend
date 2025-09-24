@@ -4,6 +4,7 @@ import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import AuthController from './auth.controller';
 import AuthValidation from './auth.validation';
+import { upload } from '../../utils/handelFile';
 
 const router = express.Router();
 
@@ -30,6 +31,14 @@ router.get(
   '/me',
   auth(Role.SUPER_ADMIN, Role.COUNSELOR),
   AuthController.GetMyProfile,
+);
+
+router.patch(
+  '/profile',
+  auth(Role.SUPER_ADMIN, Role.COUNSELOR),
+  upload.single('profile_picture'),
+  validateRequest(AuthValidation.UpdateProfileSchema),
+  AuthController.UpdateProfile,
 );
 
 export const AuthRoutes = router;

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import AuthService from './auth.services';
+import { uploadToSpaces, extractKeyFromUrl, deleteFromSpaces } from '../../utils/handelFile';
 
 const Register = catchAsync(async (req, res) => {
   const result = await AuthService.Register(req.body);
@@ -54,10 +55,52 @@ const GetMyProfile = catchAsync(async (req, res) => {
   });
 });
 
+const UpdateProfile = catchAsync(async (req, res) => {
+  let profilePictureUrl: string | undefined;
+
+  // Handle profile picture upload if provided
+  if (req.file) {
+    // Get current user to check if they have an existing profile picture
+    const currentUser = await AuthService.GetMyProfile(req.user);
+    
+    // Delete old profile picture if it exists
+    if (currentUser.profile_picture) {
+      const oldKey = extractKeyFromUrl(currentUser.profile_picture);
+      if (oldKey) {
+        try {
+          await deleteFromSpaces(oldKey);
+        } catch (error) {
+          console.error('Failed to delete old profile picture:', error);
+        }
+      }
+    }
+
+    // Upload new profile picture
+    const uploadResult = await uploadToSpaces(req.file, {
+      folder: 'profile-pictures',
+    });
+    profilePictureUrl = uploadResult.url;
+  }
+
+  const result = await AuthService.UpdateProfile(
+    req.body,
+    profilePictureUrl,
+    req.user,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Profile updated successfully',
+    data: result,
+  });
+});
+
 const AuthController = {
   Login,
   ChangePassword,
   GetMyProfile,
+  UpdateProfile,
   Register,
 };
 
