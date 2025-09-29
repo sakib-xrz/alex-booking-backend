@@ -6,6 +6,7 @@ import { ClientRoutes } from '../modules/client/client.routes';
 import { AppointmentRoutes } from '../modules/appointment/appointment.routes';
 import { PublicCalendarRoutes } from '../modules/publicCalendar/publicCalendar.routes';
 import { PublicAppointmentRoutes } from '../modules/publicAppointment/publicAppointment.routes';
+import { PublicUsersRoutes } from '../modules/publicUsers/publicUsers.routes';
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
 import { GoogleRoutes } from '../modules/google/google.routes';
@@ -22,6 +23,7 @@ const routes: Route[] = [
   { path: '/appointments', route: AppointmentRoutes },
   { path: '/public-calenders', route: PublicCalendarRoutes },
   { path: '/public-appointments', route: PublicAppointmentRoutes },
+  { path: '/public-users', route: PublicUsersRoutes },
   { path: '/otp', route: OptVerificationRoutes },
   { path: '/payments', route: PaymentRoutes },
   { path: '/google', route: GoogleRoutes },

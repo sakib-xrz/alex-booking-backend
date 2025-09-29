@@ -11,6 +11,7 @@ const client_routes_1 = require("../modules/client/client.routes");
 const appointment_routes_1 = require("../modules/appointment/appointment.routes");
 const publicCalendar_routes_1 = require("../modules/publicCalendar/publicCalendar.routes");
 const publicAppointment_routes_1 = require("../modules/publicAppointment/publicAppointment.routes");
+const publicUsers_routes_1 = require("../modules/publicUsers/publicUsers.routes");
 const optVerification_routes_1 = require("../modules/optVerification/optVerification.routes");
 const payment_routes_1 = require("../modules/payment/payment.routes");
 const google_routes_1 = require("../modules/google/google.routes");
@@ -23,6 +24,7 @@ const routes = [
     { path: '/appointments', route: appointment_routes_1.AppointmentRoutes },
     { path: '/public-calenders', route: publicCalendar_routes_1.PublicCalendarRoutes },
     { path: '/public-appointments', route: publicAppointment_routes_1.PublicAppointmentRoutes },
+    { path: '/public-users', route: publicUsers_routes_1.PublicUsersRoutes },
     { path: '/otp', route: optVerification_routes_1.OptVerificationRoutes },
     { path: '/payments', route: payment_routes_1.PaymentRoutes },
     { path: '/google', route: google_routes_1.GoogleRoutes },
