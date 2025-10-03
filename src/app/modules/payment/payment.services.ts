@@ -5,6 +5,7 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import GoogleCalendarService from '../google/googleCalendar.services';
+import { BalanceService } from '../balance/balance.services';
 
 interface CreatePaymentIntentData {
   appointment_id: string;
@@ -158,55 +159,101 @@ const handleWebhookEvent = async (event: Stripe.Event): Promise<void> => {
 
 const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {
   let appointmentId: string = '';
+  let counsellorId: string = '';
+  let paymentAmount: number = 0;
 
-  await prisma.$transaction(async (tx) => {
-    // Find the payment record by transaction_id
-    const existingPayment = await tx.payment.findUnique({
-      where: { transaction_id: paymentIntent.id },
-    });
+  await prisma.$transaction(
+    async (tx) => {
+      // Find the payment record by transaction_id
+      const existingPayment = await tx.payment.findUnique({
+        where: { transaction_id: paymentIntent.id },
+        include: {
+          appointment: {
+            select: {
+              counselor_id: true,
+              time_slot_id: true,
+            },
+          },
+        },
+      });
 
-    if (!existingPayment) {
-      console.error(
-        `Payment record not found for transaction: ${paymentIntent.id}`,
-      );
-      throw new Error(
-        `Payment record not found for transaction: ${paymentIntent.id}`,
-      );
-    }
+      if (!existingPayment) {
+        console.error(
+          `Payment record not found for transaction: ${paymentIntent.id}`,
+        );
+        throw new Error(
+          `Payment record not found for transaction: ${paymentIntent.id}`,
+        );
+      }
 
-    appointmentId = existingPayment.appointment_id;
+      appointmentId = existingPayment.appointment_id;
+      // Fix: The appointment table uses 'counselor_id' but balance tables use 'counsellor_id'
+      counsellorId = existingPayment.appointment.counselor_id;
+      paymentAmount = Number(existingPayment.amount);
 
-    // Update payment status
-    const payment = await tx.payment.update({
-      where: { transaction_id: paymentIntent.id },
-      data: {
-        status: 'PAID' as PaymentStatus,
-        processed_at: new Date(),
-        payment_gateway_data: paymentIntent as any,
-      },
-    });
-
-    // Confirm appointment
-    await tx.appointment.update({
-      where: { id: payment.appointment_id },
-      data: { status: 'CONFIRMED' },
-    });
-
-    const appointment = await tx.appointment.findUnique({
-      where: { id: payment.appointment_id },
-      select: {
-        time_slot_id: true,
-      },
-    });
-
-    // Update time slot status to BOOKED
-    await tx.timeSlot.update({
-      where: { id: appointment?.time_slot_id },
-      data: { status: 'BOOKED' },
-    });
-  });
+      // Perform payment update, appointment confirmation, and time slot update in parallel
+      await Promise.all([
+        // Update payment status
+        tx.payment.update({
+          where: { transaction_id: paymentIntent.id },
+          data: {
+            status: 'PAID' as PaymentStatus,
+            processed_at: new Date(),
+            payment_gateway_data: paymentIntent as any,
+          },
+        }),
+        // Confirm appointment
+        tx.appointment.update({
+          where: { id: existingPayment.appointment_id },
+          data: { status: 'CONFIRMED' },
+        }),
+        // Update time slot status to BOOKED
+        tx.timeSlot.update({
+          where: { id: existingPayment.appointment.time_slot_id },
+          data: { status: 'BOOKED' },
+        }),
+      ]);
+    },
+    {
+      timeout: 10000, // 10 seconds timeout
+      maxWait: 5000, // 5 seconds max wait for connection
+    },
+  );
 
   console.log(`Payment successful: ${paymentIntent.id}`);
+
+  // Add balance to counsellor after successful payment
+  try {
+    console.log(`Attempting to add balance for counsellor: ${counsellorId}`);
+    console.log(`Payment amount: $${paymentAmount}`);
+    console.log(`Appointment ID: ${appointmentId}`);
+
+    // Ensure counsellor balance record exists
+    const balanceRecord =
+      await BalanceService.getOrCreateCounsellorBalance(counsellorId);
+    console.log(`Balance record found/created:`, balanceRecord);
+
+    // Add the payment amount to counsellor's balance
+    const result = await BalanceService.addBalance(
+      counsellorId,
+      paymentAmount,
+      `Payment received for appointment ${appointmentId}`,
+      appointmentId,
+      'appointment',
+    );
+
+    console.log(`Balance addition result:`, result);
+    console.log(
+      `Balance added to counsellor ${counsellorId}: $${paymentAmount}`,
+    );
+  } catch (error) {
+    console.error('Error adding balance to counsellor:', error);
+    console.error('CounsellorId being used:', counsellorId);
+    console.error('AppointmentId:', appointmentId);
+    console.error('Payment amount:', paymentAmount);
+    // Don't fail the payment process if balance addition fails
+    // The payment is still successful, but balance needs manual adjustment
+  }
 
   // Create Google Calendar event after successful transaction
   try {
@@ -219,85 +266,97 @@ const handlePaymentSuccess = async (paymentIntent: Stripe.PaymentIntent) => {
 };
 
 const handlePaymentFailed = async (paymentIntent: Stripe.PaymentIntent) => {
-  await prisma.$transaction(async (tx) => {
-    // Find the payment record
-    const existingPayment = await tx.payment.findUnique({
-      where: { transaction_id: paymentIntent.id },
-    });
-
-    if (!existingPayment) {
-      console.error(
-        `Payment record not found for transaction: ${paymentIntent.id}`,
-      );
-      return;
-    }
-
-    // Update payment status
-    await tx.payment.update({
-      where: { transaction_id: paymentIntent.id },
-      data: {
-        status: 'FAILED' as PaymentStatus,
-        payment_gateway_data: paymentIntent as any,
-      },
-    });
-
-    // Reset time slot to AVAILABLE
-    const appointment = await tx.appointment.findUnique({
-      where: { id: existingPayment.appointment_id },
-      select: {
-        time_slot_id: true,
-      },
-    });
-
-    if (appointment) {
-      await tx.timeSlot.update({
-        where: { id: appointment.time_slot_id },
-        data: { status: 'AVAILABLE' },
+  await prisma.$transaction(
+    async (tx) => {
+      // Find the payment record with appointment details
+      const existingPayment = await tx.payment.findUnique({
+        where: { transaction_id: paymentIntent.id },
+        include: {
+          appointment: {
+            select: {
+              time_slot_id: true,
+            },
+          },
+        },
       });
-    }
-  });
+
+      if (!existingPayment) {
+        console.error(
+          `Payment record not found for transaction: ${paymentIntent.id}`,
+        );
+        return;
+      }
+
+      // Update payment status and reset time slot in parallel
+      await Promise.all([
+        // Update payment status
+        tx.payment.update({
+          where: { transaction_id: paymentIntent.id },
+          data: {
+            status: 'FAILED' as PaymentStatus,
+            payment_gateway_data: paymentIntent as any,
+          },
+        }),
+        // Reset time slot to AVAILABLE
+        tx.timeSlot.update({
+          where: { id: existingPayment.appointment.time_slot_id },
+          data: { status: 'AVAILABLE' },
+        }),
+      ]);
+    },
+    {
+      timeout: 10000, // 10 seconds timeout
+      maxWait: 5000, // 5 seconds max wait for connection
+    },
+  );
 
   console.log(`Payment failed: ${paymentIntent.id}`);
 };
 
 const handlePaymentCanceled = async (paymentIntent: Stripe.PaymentIntent) => {
-  await prisma.$transaction(async (tx) => {
-    // Find the payment record
-    const existingPayment = await tx.payment.findUnique({
-      where: { transaction_id: paymentIntent.id },
-    });
-
-    if (!existingPayment) {
-      console.error(
-        `Payment record not found for transaction: ${paymentIntent.id}`,
-      );
-      return;
-    }
-
-    // Update payment status
-    await tx.payment.update({
-      where: { transaction_id: paymentIntent.id },
-      data: {
-        status: 'CANCELLED' as PaymentStatus,
-        payment_gateway_data: paymentIntent as any,
-      },
-    });
-
-    // Reset time slot to AVAILABLE
-    const appointment = await tx.appointment.findUnique({
-      where: { id: existingPayment.appointment_id },
-      select: {
-        time_slot_id: true,
-      },
-    });
-
-    if (appointment) {
-      await tx.timeSlot.update({
-        where: { id: appointment.time_slot_id },
-        data: { status: 'AVAILABLE' },
+  await prisma.$transaction(
+    async (tx) => {
+      // Find the payment record with appointment details
+      const existingPayment = await tx.payment.findUnique({
+        where: { transaction_id: paymentIntent.id },
+        include: {
+          appointment: {
+            select: {
+              time_slot_id: true,
+            },
+          },
+        },
       });
-    }
-  });
+
+      if (!existingPayment) {
+        console.error(
+          `Payment record not found for transaction: ${paymentIntent.id}`,
+        );
+        return;
+      }
+
+      // Update payment status and reset time slot in parallel
+      await Promise.all([
+        // Update payment status
+        tx.payment.update({
+          where: { transaction_id: paymentIntent.id },
+          data: {
+            status: 'CANCELLED' as PaymentStatus,
+            payment_gateway_data: paymentIntent as any,
+          },
+        }),
+        // Reset time slot to AVAILABLE
+        tx.timeSlot.update({
+          where: { id: existingPayment.appointment.time_slot_id },
+          data: { status: 'AVAILABLE' },
+        }),
+      ]);
+    },
+    {
+      timeout: 10000, // 10 seconds timeout
+      maxWait: 5000, // 5 seconds max wait for connection
+    },
+  );
 
   console.log(`Payment canceled: ${paymentIntent.id}`);
 };

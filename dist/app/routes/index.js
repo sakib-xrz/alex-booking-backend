@@ -15,6 +15,9 @@ const publicUsers_routes_1 = require("../modules/publicUsers/publicUsers.routes"
 const optVerification_routes_1 = require("../modules/optVerification/optVerification.routes");
 const payment_routes_1 = require("../modules/payment/payment.routes");
 const google_routes_1 = require("../modules/google/google.routes");
+const balance_routes_1 = require("../modules/balance/balance.routes");
+const payout_routes_1 = require("../modules/payout/payout.routes");
+const stripe_routes_1 = require("../modules/stripe/stripe.routes");
 const router = express_1.default.Router();
 const routes = [
     { path: '/auth', route: auth_routes_1.AuthRoutes },
@@ -28,6 +31,9 @@ const routes = [
     { path: '/otp', route: optVerification_routes_1.OptVerificationRoutes },
     { path: '/payments', route: payment_routes_1.PaymentRoutes },
     { path: '/google', route: google_routes_1.GoogleRoutes },
+    { path: '/balance', route: balance_routes_1.BalanceRoutes },
+    { path: '/payouts', route: payout_routes_1.PayoutRoutes },
+    { path: '/stripe', route: stripe_routes_1.StripeRoutes },
 ];
 routes.forEach((route) => {
     router.use(route.path, route.route);

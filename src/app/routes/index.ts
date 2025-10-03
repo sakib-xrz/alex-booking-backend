@@ -10,6 +10,9 @@ import { PublicUsersRoutes } from '../modules/publicUsers/publicUsers.routes';
 import { OptVerificationRoutes } from '../modules/optVerification/optVerification.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
 import { GoogleRoutes } from '../modules/google/google.routes';
+import { BalanceRoutes } from '../modules/balance/balance.routes';
+import { PayoutRoutes } from '../modules/payout/payout.routes';
+import { StripeRoutes } from '../modules/stripe/stripe.routes';
 
 const router = express.Router();
 
@@ -27,6 +30,9 @@ const routes: Route[] = [
   { path: '/otp', route: OptVerificationRoutes },
   { path: '/payments', route: PaymentRoutes },
   { path: '/google', route: GoogleRoutes },
+  { path: '/balance', route: BalanceRoutes },
+  { path: '/payouts', route: PayoutRoutes },
+  { path: '/stripe', route: StripeRoutes },
 ];
 
 routes.forEach((route) => {

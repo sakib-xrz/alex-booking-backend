@@ -30,6 +30,7 @@ const getPaymentByAppointment = catchAsync(async (req, res) => {
 
 // Stripe webhook handler
 const handleWebhook = async (req: Request, res: Response) => {
+  console.log('********** Webhook received from Stripe **********');
   const signature = req.headers['stripe-signature'] as string;
 
   if (!signature) {

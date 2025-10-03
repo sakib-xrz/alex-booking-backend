@@ -47,6 +47,22 @@ enum PaymentStatus {
   DELETED
 }
 
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum BalanceTransactionType {
+  CREDIT
+  DEBIT
+  PAYOUT
+  MANUAL_ADJUSTMENT
+}
+
 enum MeetingPlatform {
   GOOGLE_MEET
   ZOOM
@@ -67,13 +83,20 @@ model User {
   google_account_email   String? // Google account email
   google_account_picture String? // Google account picture URL
   is_calendar_connected  Boolean   @default(false)
+  stripe_account_id      String? // Stripe Connect account ID
+  stripe_public_key      String? // Stripe publishable key
+  stripe_secret_key      String? // Stripe secret key (encrypted)
+  is_stripe_connected    Boolean   @default(false)
   is_deleted             Boolean   @default(false)
   created_at             DateTime  @default(now())
   updated_at             DateTime  @updatedAt
 
   // Relations
-  calendars    Calendar[]
-  appointments Appointment[]
+  calendars            Calendar[]
+  appointments         Appointment[]
+  counsellor_balance   CounsellorBalance?
+  payout_requests      PayoutRequest[]
+  balance_transactions BalanceTransaction[]
 
   @@map("users")
 }
@@ -233,4 +256,66 @@ model EmailOTPVerification {
 
   @@index([email])
   @@map("email_otp_verifications")
+}
+
+model CounsellorBalance {
+  id              String   @id @default(uuid())
+  counsellor_id   String   @unique
+  current_balance Decimal  @default(0.00) @db.Decimal(10, 2)
+  total_earned    Decimal  @default(0.00) @db.Decimal(10, 2)
+  total_withdrawn Decimal  @default(0.00) @db.Decimal(10, 2)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  counsellor User @relation(fields: [counsellor_id], references: [id], onDelete: Cascade)
+
+  @@index([counsellor_id])
+  @@map("counsellor_balances")
+}
+
+model PayoutRequest {
+  id                 String       @id @default(uuid())
+  counsellor_id      String
+  amount             Decimal      @db.Decimal(10, 2)
+  status             PayoutStatus @default(PENDING)
+  requested_at       DateTime     @default(now())
+  processed_at       DateTime?
+  processed_by       String? // Super admin who processed the request
+  rejection_reason   String?
+  stripe_transfer_id String? // Stripe transfer ID for tracking
+  notes              String?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+
+  // Relations
+  counsellor User @relation(fields: [counsellor_id], references: [id], onDelete: Cascade)
+
+  @@index([counsellor_id])
+  @@index([status])
+  @@index([requested_at])
+  @@map("payout_requests")
+}
+
+model BalanceTransaction {
+  id             String                 @id @default(uuid())
+  counsellor_id  String
+  type           BalanceTransactionType
+  amount         Decimal                @db.Decimal(10, 2)
+  description    String
+  reference_id   String? // Can reference appointment_id, payout_request_id, etc.
+  reference_type String? // 'appointment', 'payout_request', 'manual_adjustment'
+  balance_before Decimal                @db.Decimal(10, 2)
+  balance_after  Decimal                @db.Decimal(10, 2)
+  processed_by   String? // User ID who processed (for manual adjustments)
+  created_at     DateTime               @default(now())
+
+  // Relations
+  counsellor User @relation(fields: [counsellor_id], references: [id], onDelete: Cascade)
+
+  @@index([counsellor_id])
+  @@index([type])
+  @@index([reference_id])
+  @@index([created_at])
+  @@map("balance_transactions")
 }

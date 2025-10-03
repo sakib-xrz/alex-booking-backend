@@ -292,8 +292,27 @@ const cancelCalendarEvent = async (eventId: string, counselorId: string) => {
     });
 
     console.log(`Google Calendar event ${eventId} cancelled successfully`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error cancelling Google Calendar event:', error);
+
+    // Handle specific Google Calendar errors gracefully
+    if (error.code === 410 || error.status === 410) {
+      // Event was already deleted from Google Calendar
+      console.log(
+        `Google Calendar event ${eventId} was already deleted, skipping cancellation`,
+      );
+      return; // Don't throw error, treat as success
+    }
+
+    if (error.code === 404 || error.status === 404) {
+      // Event not found in Google Calendar
+      console.log(
+        `Google Calendar event ${eventId} not found, may have been already deleted`,
+      );
+      return; // Don't throw error, treat as success
+    }
+
+    // For other errors, still throw to maintain error handling
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to cancel Google Calendar event',

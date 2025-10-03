@@ -18,6 +18,7 @@ const payment_utils_1 = require("./payment.utils");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const googleCalendar_services_1 = __importDefault(require("../google/googleCalendar.services"));
+const balance_services_1 = require("../balance/balance.services");
 const createPaymentIntent = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const appointment = yield prisma_1.default.appointment.findUnique({
         where: { id: data.appointment_id },
@@ -130,39 +131,66 @@ const handleWebhookEvent = (event) => __awaiter(void 0, void 0, void 0, function
 });
 const handlePaymentSuccess = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     let appointmentId = '';
+    let counsellorId = '';
+    let paymentAmount = 0;
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         const existingPayment = yield tx.payment.findUnique({
             where: { transaction_id: paymentIntent.id },
+            include: {
+                appointment: {
+                    select: {
+                        counselor_id: true,
+                        time_slot_id: true,
+                    },
+                },
+            },
         });
         if (!existingPayment) {
             console.error(`Payment record not found for transaction: ${paymentIntent.id}`);
             throw new Error(`Payment record not found for transaction: ${paymentIntent.id}`);
         }
         appointmentId = existingPayment.appointment_id;
-        const payment = yield tx.payment.update({
-            where: { transaction_id: paymentIntent.id },
-            data: {
-                status: 'PAID',
-                processed_at: new Date(),
-                payment_gateway_data: paymentIntent,
-            },
-        });
-        yield tx.appointment.update({
-            where: { id: payment.appointment_id },
-            data: { status: 'CONFIRMED' },
-        });
-        const appointment = yield tx.appointment.findUnique({
-            where: { id: payment.appointment_id },
-            select: {
-                time_slot_id: true,
-            },
-        });
-        yield tx.timeSlot.update({
-            where: { id: appointment === null || appointment === void 0 ? void 0 : appointment.time_slot_id },
-            data: { status: 'BOOKED' },
-        });
-    }));
+        counsellorId = existingPayment.appointment.counselor_id;
+        paymentAmount = Number(existingPayment.amount);
+        yield Promise.all([
+            tx.payment.update({
+                where: { transaction_id: paymentIntent.id },
+                data: {
+                    status: 'PAID',
+                    processed_at: new Date(),
+                    payment_gateway_data: paymentIntent,
+                },
+            }),
+            tx.appointment.update({
+                where: { id: existingPayment.appointment_id },
+                data: { status: 'CONFIRMED' },
+            }),
+            tx.timeSlot.update({
+                where: { id: existingPayment.appointment.time_slot_id },
+                data: { status: 'BOOKED' },
+            }),
+        ]);
+    }), {
+        timeout: 10000,
+        maxWait: 5000,
+    });
     console.log(`Payment successful: ${paymentIntent.id}`);
+    try {
+        console.log(`Attempting to add balance for counsellor: ${counsellorId}`);
+        console.log(`Payment amount: $${paymentAmount}`);
+        console.log(`Appointment ID: ${appointmentId}`);
+        const balanceRecord = yield balance_services_1.BalanceService.getOrCreateCounsellorBalance(counsellorId);
+        console.log(`Balance record found/created:`, balanceRecord);
+        const result = yield balance_services_1.BalanceService.addBalance(counsellorId, paymentAmount, `Payment received for appointment ${appointmentId}`, appointmentId, 'appointment');
+        console.log(`Balance addition result:`, result);
+        console.log(`Balance added to counsellor ${counsellorId}: $${paymentAmount}`);
+    }
+    catch (error) {
+        console.error('Error adding balance to counsellor:', error);
+        console.error('CounsellorId being used:', counsellorId);
+        console.error('AppointmentId:', appointmentId);
+        console.error('Payment amount:', paymentAmount);
+    }
     try {
         yield createGoogleCalendarEvent(appointmentId);
     }
@@ -174,62 +202,70 @@ const handlePaymentFailed = (paymentIntent) => __awaiter(void 0, void 0, void 0,
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         const existingPayment = yield tx.payment.findUnique({
             where: { transaction_id: paymentIntent.id },
+            include: {
+                appointment: {
+                    select: {
+                        time_slot_id: true,
+                    },
+                },
+            },
         });
         if (!existingPayment) {
             console.error(`Payment record not found for transaction: ${paymentIntent.id}`);
             return;
         }
-        yield tx.payment.update({
-            where: { transaction_id: paymentIntent.id },
-            data: {
-                status: 'FAILED',
-                payment_gateway_data: paymentIntent,
-            },
-        });
-        const appointment = yield tx.appointment.findUnique({
-            where: { id: existingPayment.appointment_id },
-            select: {
-                time_slot_id: true,
-            },
-        });
-        if (appointment) {
-            yield tx.timeSlot.update({
-                where: { id: appointment.time_slot_id },
+        yield Promise.all([
+            tx.payment.update({
+                where: { transaction_id: paymentIntent.id },
+                data: {
+                    status: 'FAILED',
+                    payment_gateway_data: paymentIntent,
+                },
+            }),
+            tx.timeSlot.update({
+                where: { id: existingPayment.appointment.time_slot_id },
                 data: { status: 'AVAILABLE' },
-            });
-        }
-    }));
+            }),
+        ]);
+    }), {
+        timeout: 10000,
+        maxWait: 5000,
+    });
     console.log(`Payment failed: ${paymentIntent.id}`);
 });
 const handlePaymentCanceled = (paymentIntent) => __awaiter(void 0, void 0, void 0, function* () {
     yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         const existingPayment = yield tx.payment.findUnique({
             where: { transaction_id: paymentIntent.id },
+            include: {
+                appointment: {
+                    select: {
+                        time_slot_id: true,
+                    },
+                },
+            },
         });
         if (!existingPayment) {
             console.error(`Payment record not found for transaction: ${paymentIntent.id}`);
             return;
         }
-        yield tx.payment.update({
-            where: { transaction_id: paymentIntent.id },
-            data: {
-                status: 'CANCELLED',
-                payment_gateway_data: paymentIntent,
-            },
-        });
-        const appointment = yield tx.appointment.findUnique({
-            where: { id: existingPayment.appointment_id },
-            select: {
-                time_slot_id: true,
-            },
-        });
-        if (appointment) {
-            yield tx.timeSlot.update({
-                where: { id: appointment.time_slot_id },
+        yield Promise.all([
+            tx.payment.update({
+                where: { transaction_id: paymentIntent.id },
+                data: {
+                    status: 'CANCELLED',
+                    payment_gateway_data: paymentIntent,
+                },
+            }),
+            tx.timeSlot.update({
+                where: { id: existingPayment.appointment.time_slot_id },
                 data: { status: 'AVAILABLE' },
-            });
-        }
-    }));
+            }),
+        ]);
+    }), {
+        timeout: 10000,
+        maxWait: 5000,
+    });
     console.log(`Payment canceled: ${paymentIntent.id}`);
 });
 const createGoogleCalendarEvent = (appointmentId) => __awaiter(void 0, void 0, void 0, function* () {

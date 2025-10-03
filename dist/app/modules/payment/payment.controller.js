@@ -38,6 +38,7 @@ const getPaymentByAppointment = (0, catchAsync_1.default)((req, res) => __awaite
     });
 }));
 const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('********** Webhook received from Stripe **********');
     const signature = req.headers['stripe-signature'];
     if (!signature) {
         console.error('Missing stripe-signature header');

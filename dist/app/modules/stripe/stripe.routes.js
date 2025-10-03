@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StripeRoutes = void 0;
+const express_1 = require("express");
+const stripe_controller_1 = require("./stripe.controller");
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const client_1 = require("@prisma/client");
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const stripe_validation_1 = __importDefault(require("./stripe.validation"));
+const router = (0, express_1.Router)();
+router.post('/connect', (0, auth_1.default)(client_1.Role.COUNSELOR), (0, validateRequest_1.default)(stripe_validation_1.default.connectStripeAccountSchema), stripe_controller_1.StripeController.connectStripeAccount);
+router.patch('/update', (0, auth_1.default)(client_1.Role.COUNSELOR), (0, validateRequest_1.default)(stripe_validation_1.default.updateStripeAccountSchema), stripe_controller_1.StripeController.updateStripeAccount);
+router.delete('/disconnect', (0, auth_1.default)(client_1.Role.COUNSELOR), stripe_controller_1.StripeController.disconnectStripeAccount);
+router.get('/status', (0, auth_1.default)(client_1.Role.COUNSELOR), stripe_controller_1.StripeController.getStripeAccountStatus);
+router.get('/verify', (0, auth_1.default)(client_1.Role.COUNSELOR), stripe_controller_1.StripeController.verifyStripeAccount);
+router.get('/counsellor/:counsellor_id/status', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), stripe_controller_1.StripeController.getCounsellorStripeStatus);
+exports.StripeRoutes = router;

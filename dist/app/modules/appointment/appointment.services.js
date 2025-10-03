@@ -188,33 +188,33 @@ const CompleteAppointmentById = (id) => __awaiter(void 0, void 0, void 0, functi
     return appointment;
 });
 const CancelAppointmentById = (id, counselorId) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
-        const appointment = yield tx.appointment.findUnique({
-            where: { id },
-            include: {
-                time_slot: true,
-                counselor: true,
-                meeting: true,
-            },
-        });
-        if (!appointment) {
-            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
-        }
-        if (appointment.counselor_id !== counselorId) {
-            throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to cancel this appointment');
-        }
-        if (appointment.status === 'CANCELLED') {
-            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Appointment is already cancelled');
-        }
-        if (appointment.status === 'COMPLETED') {
-            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Cannot cancel a completed appointment');
-        }
+    const appointment = yield prisma_1.default.appointment.findUnique({
+        where: { id },
+        include: {
+            time_slot: true,
+            counselor: true,
+            meeting: true,
+        },
+    });
+    if (!appointment) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Appointment not found');
+    }
+    if (appointment.counselor_id !== counselorId) {
+        throw new AppError_1.default(http_status_1.default.FORBIDDEN, 'You are not authorized to cancel this appointment');
+    }
+    if (appointment.status === 'CANCELLED') {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Appointment is already cancelled');
+    }
+    if (appointment.status === 'COMPLETED') {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Cannot cancel a completed appointment');
+    }
+    const updatedAppointment = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             yield tx.timeSlot.update({
                 where: { id: appointment.time_slot_id },
                 data: { status: 'AVAILABLE' },
             });
-            const updatedAppointment = yield tx.appointment.update({
+            const updated = yield tx.appointment.update({
                 where: { id },
                 data: { status: 'CANCELLED' },
             });
@@ -223,21 +223,22 @@ const CancelAppointmentById = (id, counselorId) => __awaiter(void 0, void 0, voi
                     where: { id: appointment.meeting.id },
                 });
             }
-            if (appointment.event_id) {
-                try {
-                    yield googleCalendar_services_1.default.cancelCalendarEvent(appointment.event_id, counselorId);
-                }
-                catch (calendarError) {
-                    console.error('Failed to cancel Google Calendar event:', calendarError);
-                }
-            }
-            return updatedAppointment;
+            return updated;
         }
         catch (error) {
             console.error('Error during appointment cancellation:', error);
             throw error;
         }
     }));
+    if (appointment.event_id) {
+        try {
+            yield googleCalendar_services_1.default.cancelCalendarEvent(appointment.event_id, counselorId);
+        }
+        catch (calendarError) {
+            console.error('Failed to cancel Google Calendar event:', calendarError);
+        }
+    }
+    return updatedAppointment;
 });
 const RescheduleAppointmentById = (appointmentId, counselorId, newTimeSlotId) => __awaiter(void 0, void 0, void 0, function* () {
     const txResult = yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
