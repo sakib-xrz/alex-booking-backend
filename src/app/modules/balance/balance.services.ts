@@ -11,16 +11,6 @@ import calculatePagination, {
   IPaginationOptions,
 } from '../../utils/pagination';
 
-interface CreateBalanceTransactionData {
-  counsellor_id: string;
-  type: BalanceTransactionType;
-  amount: number;
-  description: string;
-  reference_id?: string;
-  reference_type?: string;
-  processed_by?: string;
-}
-
 interface BalanceFilters {
   search?: string;
 }
@@ -88,7 +78,7 @@ const addBalance = async (
     const transaction = await tx.balanceTransaction.create({
       data: {
         counsellor_id,
-        type: 'CREDIT',
+        type: BalanceTransactionType.CREDIT,
         amount,
         description,
         reference_id,
@@ -142,7 +132,7 @@ const deductBalance = async (
     const transaction = await tx.balanceTransaction.create({
       data: {
         counsellor_id,
-        type: 'DEBIT',
+        type: BalanceTransactionType.DEBIT,
         amount,
         description,
         reference_id,
@@ -193,7 +183,7 @@ const adjustBalance = async (
     const transaction = await tx.balanceTransaction.create({
       data: {
         counsellor_id,
-        type: 'MANUAL_ADJUSTMENT',
+        type: BalanceTransactionType.MANUAL_ADJUSTMENT,
         amount: Math.abs(amount),
         description,
         reference_type: 'manual_adjustment',
@@ -217,7 +207,7 @@ const getBalanceTransactions = async (
   total: number;
   totalPages: number;
 }> => {
-  const { page, limit, skip, sort_by, sort_order } =
+  const { limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
 
   const whereClause: Prisma.BalanceTransactionWhereInput = {
@@ -259,7 +249,7 @@ const getAllCounsellorBalances = async (
   total: number;
   totalPages: number;
 }> => {
-  const { page, limit, skip, sort_by, sort_order } =
+  const { limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
 
   const whereClause: Prisma.CounsellorBalanceWhereInput = {};
@@ -320,12 +310,62 @@ const getAllCounsellorBalances = async (
   return { balances, total, totalPages };
 };
 
+// Set balance values (for super admin - direct balance manipulation)
+const setBalanceValues = async (
+  counsellor_id: string,
+  current_balance: number,
+  total_earned: number,
+  total_withdrawn: number,
+  processed_by: string,
+): Promise<{ balance: CounsellorBalance; transaction: BalanceTransaction }> => {
+  return await prisma.$transaction(async (tx) => {
+    // Get current balance
+    const currentBalance = await tx.counsellorBalance.findUnique({
+      where: { counsellor_id },
+    });
+
+    if (!currentBalance) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Counsellor balance not found');
+    }
+
+    const balanceBefore = Number(currentBalance.current_balance);
+
+    // Update balance with new values
+    const updatedBalance = await tx.counsellorBalance.update({
+      where: { counsellor_id },
+      data: {
+        current_balance,
+        total_earned,
+        total_withdrawn,
+      },
+    });
+
+    // Create transaction record for the balance change
+    const balanceDifference = current_balance - balanceBefore;
+    const transaction = await tx.balanceTransaction.create({
+      data: {
+        counsellor_id,
+        type: BalanceTransactionType.MANUAL_ADJUSTMENT,
+        amount: Math.abs(balanceDifference),
+        description: `Balance values updated - Current: ${current_balance}, Total Earned: ${total_earned}, Total Withdrawn: ${total_withdrawn}`,
+        reference_type: 'balance_update',
+        balance_before: balanceBefore,
+        balance_after: current_balance,
+        processed_by,
+      },
+    });
+
+    return { balance: updatedBalance, transaction };
+  });
+};
+
 export const BalanceService = {
   getOrCreateCounsellorBalance,
   getCounsellorBalance,
   addBalance,
   deductBalance,
   adjustBalance,
+  setBalanceValues,
   getBalanceTransactions,
   getAllCounsellorBalances,
 };

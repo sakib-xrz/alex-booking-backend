@@ -39,4 +39,10 @@ router.patch('/:counsellor_id/adjust',
   BalanceController.adjustBalance
 );
 
+router.patch('/:counsellor_id/set-values', 
+  auth(Role.SUPER_ADMIN), 
+  validateRequest(BalanceValidation.setBalanceValuesSchema),
+  BalanceController.setBalanceValues
+);
+
 export const BalanceRoutes = router;

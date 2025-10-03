@@ -302,6 +302,7 @@ model BalanceTransaction {
   counsellor_id  String
   type           BalanceTransactionType
   amount         Decimal                @db.Decimal(10, 2)
+  is_increase    Boolean                @default(true)
   description    String
   reference_id   String? // Can reference appointment_id, payout_request_id, etc.
   reference_type String? // 'appointment', 'payout_request', 'manual_adjustment'

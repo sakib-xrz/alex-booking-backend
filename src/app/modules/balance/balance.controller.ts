@@ -125,6 +125,25 @@ const adjustBalance = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const setBalanceValues = catchAsync(async (req: Request, res: Response) => {
+  const { counsellor_id } = req.params;
+  const { current_balance, total_earned, total_withdrawn } = req.body;
+  const processed_by = req.user?.id;
+
+  const result = await BalanceService.setBalanceValues(
+    counsellor_id,
+    { current_balance, total_earned, total_withdrawn },
+    processed_by,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: 'Balance values updated successfully',
+    data: result,
+  });
+});
+
 export const BalanceController = {
   getCounsellorBalance,
   getMyBalance,
@@ -132,4 +151,5 @@ export const BalanceController = {
   getMyBalanceTransactions,
   getAllCounsellorBalances,
   adjustBalance,
+  setBalanceValues,
 };
