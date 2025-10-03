@@ -96,9 +96,13 @@ const getCounsellorPayoutRequests = async (
   filters: PayoutFilters,
   paginationOptions: IPaginationOptions,
 ): Promise<{
-  requests: PayoutRequest[];
-  total: number;
-  totalPages: number;
+  data: PayoutRequest[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> => {
   const { page, limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
@@ -134,7 +138,15 @@ const getCounsellorPayoutRequests = async (
 
   const totalPages = Math.ceil(total / limit);
 
-  return { requests, total, totalPages };
+  return {
+    data: requests,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 // Get all payout requests (for super admin)
@@ -142,9 +154,13 @@ const getAllPayoutRequests = async (
   filters: PayoutFilters,
   paginationOptions: IPaginationOptions,
 ): Promise<{
-  requests: (PayoutRequest & { counsellor: { name: string; email: string } })[];
-  total: number;
-  totalPages: number;
+  data: (PayoutRequest & { counsellor: { name: string; email: string } })[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> => {
   const { page, limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
@@ -212,7 +228,15 @@ const getAllPayoutRequests = async (
 
   const totalPages = Math.ceil(total / limit);
 
-  return { requests, total, totalPages };
+  return {
+    data: requests,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 // Process payout request (approve/reject)

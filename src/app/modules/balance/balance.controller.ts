@@ -50,7 +50,8 @@ const getBalanceTransactions = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: 'Balance transactions retrieved successfully',
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );
@@ -76,7 +77,8 @@ const getMyBalanceTransactions = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: 'Balance transactions retrieved successfully',
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );
@@ -100,7 +102,8 @@ const getAllCounsellorBalances = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: 'All counsellor balances retrieved successfully',
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );
@@ -132,7 +135,9 @@ const setBalanceValues = catchAsync(async (req: Request, res: Response) => {
 
   const result = await BalanceService.setBalanceValues(
     counsellor_id,
-    { current_balance, total_earned, total_withdrawn },
+    current_balance,
+    total_earned,
+    total_withdrawn,
     processed_by,
   );
 

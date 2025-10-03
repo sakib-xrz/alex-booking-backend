@@ -203,11 +203,15 @@ const getBalanceTransactions = async (
   filters: BalanceFilters,
   paginationOptions: IPaginationOptions,
 ): Promise<{
-  transactions: BalanceTransaction[];
-  total: number;
-  totalPages: number;
+  data: BalanceTransaction[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> => {
-  const { limit, skip, sort_by, sort_order } =
+  const { page, limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
 
   const whereClause: Prisma.BalanceTransactionWhereInput = {
@@ -235,7 +239,15 @@ const getBalanceTransactions = async (
 
   const totalPages = Math.ceil(total / limit);
 
-  return { transactions, total, totalPages };
+  return {
+    data: transactions,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 // Get all counsellor balances (for super admin)
@@ -243,13 +255,17 @@ const getAllCounsellorBalances = async (
   filters: BalanceFilters,
   paginationOptions: IPaginationOptions,
 ): Promise<{
-  balances: (CounsellorBalance & {
+  data: (CounsellorBalance & {
     counsellor: { name: string; email: string };
   })[];
-  total: number;
-  totalPages: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> => {
-  const { limit, skip, sort_by, sort_order } =
+  const { page, limit, skip, sort_by, sort_order } =
     calculatePagination(paginationOptions);
 
   const whereClause: Prisma.CounsellorBalanceWhereInput = {};
@@ -307,7 +323,15 @@ const getAllCounsellorBalances = async (
 
   const totalPages = Math.ceil(total / limit);
 
-  return { balances, total, totalPages };
+  return {
+    data: balances,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 // Set balance values (for super admin - direct balance manipulation)

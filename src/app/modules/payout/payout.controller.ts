@@ -43,7 +43,8 @@ const getMyPayoutRequests = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: 'Payout requests retrieved successfully',
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -65,7 +66,8 @@ const getAllPayoutRequests = catchAsync(async (req: Request, res: Response) => {
     success: true,
     statusCode: httpStatus.OK,
     message: 'All payout requests retrieved successfully',
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -90,7 +92,8 @@ const getCounsellorPayoutRequests = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: 'Counsellor payout requests retrieved successfully',
-      data: result,
+      data: result.data,
+      meta: result.meta,
     });
   },
 );
