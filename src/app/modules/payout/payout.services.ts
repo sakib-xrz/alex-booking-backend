@@ -322,9 +322,9 @@ const processPayoutRequest = async (
 const executePayout = async (
   payout_request_id: string,
 ): Promise<PayoutRequest> => {
-  return await prisma.$transaction(async (tx) => {
-    // Get approved payout request
-    const payoutRequest = await tx.payoutRequest.findUnique({
+  // Step 1: Validate and update status to PROCESSING
+  const payoutRequest = await prisma.$transaction(async (tx) => {
+    const request = await tx.payoutRequest.findUnique({
       where: { id: payout_request_id },
       include: {
         counsellor: {
@@ -339,25 +339,25 @@ const executePayout = async (
       },
     });
 
-    if (!payoutRequest) {
+    if (!request) {
       throw new AppError(httpStatus.NOT_FOUND, 'Payout request not found');
     }
 
-    if (payoutRequest.status !== 'APPROVED') {
+    if (request.status !== 'APPROVED') {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Payout request is not approved',
       );
     }
 
-    if (!payoutRequest.counsellor.stripe_account_id) {
+    if (!request.counsellor.stripe_account_id) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Counsellor has not connected their Stripe account. Please ask them to complete Stripe onboarding first.',
       );
     }
 
-    if (!payoutRequest.counsellor.stripe_payouts_enabled) {
+    if (!request.counsellor.stripe_payouts_enabled) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Counsellor Stripe account is not yet enabled for payouts. They may need to complete onboarding or verification.',
@@ -365,29 +365,43 @@ const executePayout = async (
     }
 
     // Update status to PROCESSING
-    await tx.payoutRequest.update({
+    return await tx.payoutRequest.update({
       where: { id: payout_request_id },
       data: { status: 'PROCESSING' },
+      include: {
+        counsellor: {
+          select: {
+            stripe_account_id: true,
+            stripe_payouts_enabled: true,
+            stripe_onboarding_complete: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  });
+
+  // Step 2: Perform Stripe transfer (outside transaction)
+  try {
+    const transfer = await stripe.transfers.create({
+      amount: Math.round(Number(payoutRequest.amount) * 100), // Convert to cents
+      currency: 'aud',
+      destination: payoutRequest.counsellor.stripe_account_id!,
+      description: `Payout for ${payoutRequest.counsellor.name} - Request #${payoutRequest.id.slice(-8)}`,
+      metadata: {
+        payout_request_id: payoutRequest.id,
+        counsellor_id: payoutRequest.counsellor_id,
+        counsellor_name: payoutRequest.counsellor.name,
+      },
     });
 
-    try {
-      // Create Stripe transfer to counsellor's Connected Account
-      const transfer = await stripe.transfers.create({
-        amount: Math.round(Number(payoutRequest.amount) * 100), // Convert to cents
-        currency: 'aud',
-        destination: payoutRequest.counsellor.stripe_account_id,
-        description: `Payout for ${payoutRequest.counsellor.name} - Request #${payoutRequest.id.slice(-8)}`,
-        metadata: {
-          payout_request_id: payoutRequest.id,
-          counsellor_id: payoutRequest.counsellor_id,
-          counsellor_name: payoutRequest.counsellor.name,
-        },
-      });
+    console.log(
+      `✅ Stripe transfer created: ${transfer.id} for $${payoutRequest.amount} AUD`,
+    );
 
-      console.log(
-        `✅ Stripe transfer created: ${transfer.id} for $${payoutRequest.amount} AUD`,
-      );
-
+    // Step 3: Update database with success (in a new transaction)
+    const completedRequest = await prisma.$transaction(async (tx) => {
       // Deduct balance from counsellor
       await BalanceService.deductBalance(
         payoutRequest.counsellor_id,
@@ -398,36 +412,36 @@ const executePayout = async (
       );
 
       // Update payout request with transfer details
-      const completedRequest = await tx.payoutRequest.update({
+      return await tx.payoutRequest.update({
         where: { id: payout_request_id },
         data: {
           status: 'COMPLETED',
           stripe_transfer_id: transfer.id,
         },
       });
+    });
 
-      console.log(
-        `✅ Payout completed: ${payoutRequest.id} - Transfer ID: ${transfer.id}`,
-      );
+    console.log(
+      `✅ Payout completed: ${payoutRequest.id} - Transfer ID: ${transfer.id}`,
+    );
 
-      return completedRequest;
-    } catch (error) {
-      // Update status to FAILED
-      await tx.payoutRequest.update({
-        where: { id: payout_request_id },
-        data: { status: 'FAILED' },
-      });
+    return completedRequest;
+  } catch (error) {
+    // Step 4: Handle failure (update status outside transaction)
+    await prisma.payoutRequest.update({
+      where: { id: payout_request_id },
+      data: { status: 'FAILED' },
+    });
 
-      console.error('❌ Stripe transfer failed:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Stripe transfer failed:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
 
-      throw new AppError(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        `Payout transfer failed: ${errorMessage}`,
-      );
-    }
-  });
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Payout transfer failed: ${errorMessage}`,
+    );
+  }
 };
 
 // Get payout request by ID
