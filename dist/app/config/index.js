@@ -12,7 +12,6 @@ exports.default = {
     bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
     jwt_access_token_secret: process.env.JWT_ACCESS_TOKEN_SECRET,
     jwt_access_token_expires_in: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN,
-    encryption_key: process.env.ENCRYPTION_KEY,
     frontend_base_url: process.env.FRONTEND_BASE_URL,
     backend_base_url: process.env.BACKEND_BASE_URL,
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
