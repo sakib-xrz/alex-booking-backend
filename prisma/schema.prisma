@@ -69,27 +69,29 @@ enum MeetingPlatform {
 }
 
 model User {
-  id                     String    @id @default(uuid())
-  name                   String
-  email                  String    @unique
-  password               String
-  role                   Role      @default(COUNSELOR)
-  specialization         String?
-  profile_picture        String?
-  google_access_token    String?
-  google_refresh_token   String?
-  google_token_expiry    DateTime?
-  google_account_name    String? // Google account name
-  google_account_email   String? // Google account email
-  google_account_picture String? // Google account picture URL
-  is_calendar_connected  Boolean   @default(false)
-  stripe_account_id      String? // Stripe Connect account ID
-  stripe_public_key      String? // Stripe publishable key
-  stripe_secret_key      String? // Stripe secret key (encrypted)
-  is_stripe_connected    Boolean   @default(false)
-  is_deleted             Boolean   @default(false)
-  created_at             DateTime  @default(now())
-  updated_at             DateTime  @updatedAt
+  id                         String    @id @default(uuid())
+  name                       String
+  email                      String    @unique
+  password                   String
+  role                       Role      @default(COUNSELOR)
+  specialization             String?
+  profile_picture            String?
+  google_access_token        String?
+  google_refresh_token       String?
+  google_token_expiry        DateTime?
+  google_account_name        String? // Google account name
+  google_account_email       String? // Google account email
+  google_account_picture     String? // Google account picture URL
+  is_calendar_connected      Boolean   @default(false)
+  stripe_account_id          String?   @unique // Stripe Connect account ID
+  stripe_charges_enabled     Boolean   @default(false) // Can accept charges
+  stripe_payouts_enabled     Boolean   @default(false) // Can receive payouts
+  stripe_details_submitted   Boolean   @default(false) // Submitted onboarding info
+  stripe_onboarding_complete Boolean   @default(false) // Completed full onboarding
+  is_stripe_connected        Boolean   @default(false) // Legacy field - kept for compatibility
+  is_deleted                 Boolean   @default(false)
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
 
   // Relations
   calendars            Calendar[]

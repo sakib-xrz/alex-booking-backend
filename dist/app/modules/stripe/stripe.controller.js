@@ -17,35 +17,38 @@ const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const stripe_services_1 = require("./stripe.services");
-const connectStripeAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createConnectAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const counsellor_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-    const { stripe_public_key, stripe_secret_key } = req.body;
-    const result = yield stripe_services_1.StripeService.connectStripeAccount({
+    const result = yield stripe_services_1.StripeService.createConnectAccount({
         counsellor_id,
-        stripe_public_key,
-        stripe_secret_key,
     });
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Stripe account connected successfully',
+        message: 'Stripe Connect account link created successfully',
         data: result,
     });
 }));
-const updateStripeAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const refreshAccountStatus = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const counsellor_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-    const { stripe_public_key, stripe_secret_key } = req.body;
-    const result = yield stripe_services_1.StripeService.updateStripeAccount({
-        counsellor_id,
-        stripe_public_key,
-        stripe_secret_key,
-    });
+    const result = yield stripe_services_1.StripeService.refreshAccountStatus(counsellor_id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Stripe account updated successfully',
+        message: 'Stripe account status refreshed successfully',
+        data: result,
+    });
+}));
+const createAccountLink = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const counsellor_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const result = yield stripe_services_1.StripeService.createAccountLink(counsellor_id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Stripe onboarding link created successfully',
         data: result,
     });
 }));
@@ -71,14 +74,25 @@ const getStripeAccountStatus = (0, catchAsync_1.default)((req, res) => __awaiter
         data: result,
     });
 }));
-const verifyStripeAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getStripeAccountDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const counsellor_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-    const result = yield stripe_services_1.StripeService.verifyStripeAccount(counsellor_id);
+    const result = yield stripe_services_1.StripeService.getStripeAccountDetails(counsellor_id);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: 'Stripe account verification completed',
+        message: 'Stripe account details retrieved successfully',
+        data: result,
+    });
+}));
+const createLoginLink = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const counsellor_id = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const result = yield stripe_services_1.StripeService.createLoginLink(counsellor_id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Stripe dashboard login link created successfully',
         data: result,
     });
 }));
@@ -92,11 +106,24 @@ const getCounsellorStripeStatus = (0, catchAsync_1.default)((req, res) => __awai
         data: result,
     });
 }));
+const getCounsellorStripeDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { counsellor_id } = req.params;
+    const result = yield stripe_services_1.StripeService.getStripeAccountDetails(counsellor_id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Counsellor Stripe account details retrieved successfully',
+        data: result,
+    });
+}));
 exports.StripeController = {
-    connectStripeAccount,
-    updateStripeAccount,
+    createConnectAccount,
+    refreshAccountStatus,
+    createAccountLink,
     disconnectStripeAccount,
     getStripeAccountStatus,
-    verifyStripeAccount,
+    getStripeAccountDetails,
+    createLoginLink,
     getCounsellorStripeStatus,
+    getCounsellorStripeDetails,
 };

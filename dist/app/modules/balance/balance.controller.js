@@ -53,7 +53,8 @@ const getBalanceTransactions = (0, catchAsync_1.default)((req, res) => __awaiter
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Balance transactions retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const getMyBalanceTransactions = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -71,7 +72,8 @@ const getMyBalanceTransactions = (0, catchAsync_1.default)((req, res) => __await
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Balance transactions retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const getAllCounsellorBalances = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -87,7 +89,8 @@ const getAllCounsellorBalances = (0, catchAsync_1.default)((req, res) => __await
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'All counsellor balances retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const adjustBalance = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -103,6 +106,19 @@ const adjustBalance = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         data: result,
     });
 }));
+const setBalanceValues = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { counsellor_id } = req.params;
+    const { current_balance, total_earned, total_withdrawn } = req.body;
+    const processed_by = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const result = yield balance_services_1.BalanceService.setBalanceValues(counsellor_id, current_balance, total_earned, total_withdrawn, processed_by);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: 'Balance values updated successfully',
+        data: result,
+    });
+}));
 exports.BalanceController = {
     getCounsellorBalance,
     getMyBalance,
@@ -110,4 +126,5 @@ exports.BalanceController = {
     getMyBalanceTransactions,
     getAllCounsellorBalances,
     adjustBalance,
+    setBalanceValues,
 };

@@ -49,7 +49,8 @@ const getMyPayoutRequests = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Payout requests retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const getAllPayoutRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -65,7 +66,8 @@ const getAllPayoutRequests = (0, catchAsync_1.default)((req, res) => __awaiter(v
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'All payout requests retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const getCounsellorPayoutRequests = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -82,7 +84,8 @@ const getCounsellorPayoutRequests = (0, catchAsync_1.default)((req, res) => __aw
         success: true,
         statusCode: http_status_1.default.OK,
         message: 'Counsellor payout requests retrieved successfully',
-        data: result,
+        data: result.data,
+        meta: result.meta,
     });
 }));
 const getPayoutRequestById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

@@ -17,4 +17,5 @@ router.get('/all', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), (0, validateR
 router.get('/:counsellor_id', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), balance_controller_1.BalanceController.getCounsellorBalance);
 router.get('/:counsellor_id/transactions', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), (0, validateRequest_1.default)(balance_validation_1.default.balanceFiltersSchema), balance_controller_1.BalanceController.getBalanceTransactions);
 router.patch('/:counsellor_id/adjust', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), (0, validateRequest_1.default)(balance_validation_1.default.adjustBalanceSchema), balance_controller_1.BalanceController.adjustBalance);
+router.patch('/:counsellor_id/set-values', (0, auth_1.default)(client_1.Role.SUPER_ADMIN), (0, validateRequest_1.default)(balance_validation_1.default.setBalanceValuesSchema), balance_controller_1.BalanceController.setBalanceValues);
 exports.BalanceRoutes = router;

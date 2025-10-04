@@ -3,10 +3,10 @@ import prisma from '../../utils/prisma';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 import { BalanceService } from '../balance/balance.services';
-import { stripe } from '../payment/payment.utils';
 import calculatePagination, {
   IPaginationOptions,
 } from '../../utils/pagination';
+import { stripe } from '../payment/payment.utils';
 
 interface CreatePayoutRequestData {
   counsellor_id: string;
@@ -318,7 +318,7 @@ const processPayoutRequest = async (
   });
 };
 
-// Execute payout (transfer money via Stripe)
+// Execute payout - Automated Stripe Connect transfer
 const executePayout = async (
   payout_request_id: string,
 ): Promise<PayoutRequest> => {
@@ -330,6 +330,8 @@ const executePayout = async (
         counsellor: {
           select: {
             stripe_account_id: true,
+            stripe_payouts_enabled: true,
+            stripe_onboarding_complete: true,
             name: true,
             email: true,
           },
@@ -351,7 +353,14 @@ const executePayout = async (
     if (!payoutRequest.counsellor.stripe_account_id) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Counsellor Stripe account not found',
+        'Counsellor has not connected their Stripe account. Please ask them to complete Stripe onboarding first.',
+      );
+    }
+
+    if (!payoutRequest.counsellor.stripe_payouts_enabled) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Counsellor Stripe account is not yet enabled for payouts. They may need to complete onboarding or verification.',
       );
     }
 
@@ -362,13 +371,22 @@ const executePayout = async (
     });
 
     try {
-      // Create Stripe transfer
+      // Create Stripe transfer to counsellor's Connected Account
       const transfer = await stripe.transfers.create({
         amount: Math.round(Number(payoutRequest.amount) * 100), // Convert to cents
         currency: 'aud',
         destination: payoutRequest.counsellor.stripe_account_id,
         description: `Payout for ${payoutRequest.counsellor.name} - Request #${payoutRequest.id.slice(-8)}`,
+        metadata: {
+          payout_request_id: payoutRequest.id,
+          counsellor_id: payoutRequest.counsellor_id,
+          counsellor_name: payoutRequest.counsellor.name,
+        },
       });
+
+      console.log(
+        `✅ Stripe transfer created: ${transfer.id} for $${payoutRequest.amount} AUD`,
+      );
 
       // Deduct balance from counsellor
       await BalanceService.deductBalance(
@@ -388,6 +406,10 @@ const executePayout = async (
         },
       });
 
+      console.log(
+        `✅ Payout completed: ${payoutRequest.id} - Transfer ID: ${transfer.id}`,
+      );
+
       return completedRequest;
     } catch (error) {
       // Update status to FAILED
@@ -396,10 +418,13 @@ const executePayout = async (
         data: { status: 'FAILED' },
       });
 
-      console.error('Stripe transfer failed:', error);
+      console.error('❌ Stripe transfer failed:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        'Payout transfer failed',
+        `Payout transfer failed: ${errorMessage}`,
       );
     }
   });

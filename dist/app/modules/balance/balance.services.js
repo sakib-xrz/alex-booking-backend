@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BalanceService = void 0;
+const client_1 = require("@prisma/client");
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -56,7 +57,7 @@ const addBalance = (counsellor_id, amount, description, reference_id, reference_
         const transaction = yield tx.balanceTransaction.create({
             data: {
                 counsellor_id,
-                type: 'CREDIT',
+                type: client_1.BalanceTransactionType.CREDIT,
                 amount,
                 description,
                 reference_id,
@@ -91,7 +92,7 @@ const deductBalance = (counsellor_id, amount, description, reference_id, referen
         const transaction = yield tx.balanceTransaction.create({
             data: {
                 counsellor_id,
-                type: 'DEBIT',
+                type: client_1.BalanceTransactionType.DEBIT,
                 amount,
                 description,
                 reference_id,
@@ -126,7 +127,7 @@ const adjustBalance = (counsellor_id, amount, description, processed_by) => __aw
         const transaction = yield tx.balanceTransaction.create({
             data: {
                 counsellor_id,
-                type: 'MANUAL_ADJUSTMENT',
+                type: client_1.BalanceTransactionType.MANUAL_ADJUSTMENT,
                 amount: Math.abs(amount),
                 description,
                 reference_type: 'manual_adjustment',
@@ -163,7 +164,15 @@ const getBalanceTransactions = (counsellor_id, filters, paginationOptions) => __
         prisma_1.default.balanceTransaction.count({ where: whereClause }),
     ]);
     const totalPages = Math.ceil(total / limit);
-    return { transactions, total, totalPages };
+    return {
+        data: transactions,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages,
+        },
+    };
 });
 const getAllCounsellorBalances = (filters, paginationOptions) => __awaiter(void 0, void 0, void 0, function* () {
     const { page, limit, skip, sort_by, sort_order } = (0, pagination_1.default)(paginationOptions);
@@ -216,7 +225,48 @@ const getAllCounsellorBalances = (filters, paginationOptions) => __awaiter(void 
         prisma_1.default.counsellorBalance.count({ where: whereClause }),
     ]);
     const totalPages = Math.ceil(total / limit);
-    return { balances, total, totalPages };
+    return {
+        data: balances,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages,
+        },
+    };
+});
+const setBalanceValues = (counsellor_id, current_balance, total_earned, total_withdrawn, processed_by) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+        const currentBalance = yield tx.counsellorBalance.findUnique({
+            where: { counsellor_id },
+        });
+        if (!currentBalance) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Counsellor balance not found');
+        }
+        const balanceBefore = Number(currentBalance.current_balance);
+        const updatedBalance = yield tx.counsellorBalance.update({
+            where: { counsellor_id },
+            data: {
+                current_balance,
+                total_earned,
+                total_withdrawn,
+            },
+        });
+        const balanceDifference = current_balance - balanceBefore;
+        const transaction = yield tx.balanceTransaction.create({
+            data: {
+                counsellor_id,
+                type: client_1.BalanceTransactionType.MANUAL_ADJUSTMENT,
+                amount: Math.abs(balanceDifference),
+                description: `Balance values updated - Current: ${current_balance}, Total Earned: ${total_earned}, Total Withdrawn: ${total_withdrawn}`,
+                reference_type: 'balance_update',
+                balance_before: balanceBefore,
+                balance_after: current_balance,
+                processed_by,
+            },
+        });
+        return { balance: updatedBalance, transaction };
+    }));
 });
 exports.BalanceService = {
     getOrCreateCounsellorBalance,
@@ -224,6 +274,7 @@ exports.BalanceService = {
     addBalance,
     deductBalance,
     adjustBalance,
+    setBalanceValues,
     getBalanceTransactions,
     getAllCounsellorBalances,
 };

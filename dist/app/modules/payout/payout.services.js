@@ -17,8 +17,8 @@ const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const balance_services_1 = require("../balance/balance.services");
-const payment_utils_1 = require("../payment/payment.utils");
 const pagination_1 = __importDefault(require("../../utils/pagination"));
+const payment_utils_1 = require("../payment/payment.utils");
 const createPayoutRequest = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const balance = yield balance_services_1.BalanceService.getCounsellorBalance(data.counsellor_id);
     if (Number(balance.current_balance) < data.amount) {
@@ -89,7 +89,15 @@ const getCounsellorPayoutRequests = (counsellor_id, filters, paginationOptions) 
         prisma_1.default.payoutRequest.count({ where: whereClause }),
     ]);
     const totalPages = Math.ceil(total / limit);
-    return { requests, total, totalPages };
+    return {
+        data: requests,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages,
+        },
+    };
 });
 const getAllPayoutRequests = (filters, paginationOptions) => __awaiter(void 0, void 0, void 0, function* () {
     const { page, limit, skip, sort_by, sort_order } = (0, pagination_1.default)(paginationOptions);
@@ -152,7 +160,15 @@ const getAllPayoutRequests = (filters, paginationOptions) => __awaiter(void 0, v
         prisma_1.default.payoutRequest.count({ where: whereClause }),
     ]);
     const totalPages = Math.ceil(total / limit);
-    return { requests, total, totalPages };
+    return {
+        data: requests,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages,
+        },
+    };
 });
 const processPayoutRequest = (data) => __awaiter(void 0, void 0, void 0, function* () {
     return yield prisma_1.default.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
@@ -215,6 +231,8 @@ const executePayout = (payout_request_id) => __awaiter(void 0, void 0, void 0, f
                 counsellor: {
                     select: {
                         stripe_account_id: true,
+                        stripe_payouts_enabled: true,
+                        stripe_onboarding_complete: true,
                         name: true,
                         email: true,
                     },
@@ -228,7 +246,10 @@ const executePayout = (payout_request_id) => __awaiter(void 0, void 0, void 0, f
             throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Payout request is not approved');
         }
         if (!payoutRequest.counsellor.stripe_account_id) {
-            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Counsellor Stripe account not found');
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Counsellor has not connected their Stripe account. Please ask them to complete Stripe onboarding first.');
+        }
+        if (!payoutRequest.counsellor.stripe_payouts_enabled) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Counsellor Stripe account is not yet enabled for payouts. They may need to complete onboarding or verification.');
         }
         yield tx.payoutRequest.update({
             where: { id: payout_request_id },
@@ -240,7 +261,13 @@ const executePayout = (payout_request_id) => __awaiter(void 0, void 0, void 0, f
                 currency: 'aud',
                 destination: payoutRequest.counsellor.stripe_account_id,
                 description: `Payout for ${payoutRequest.counsellor.name} - Request #${payoutRequest.id.slice(-8)}`,
+                metadata: {
+                    payout_request_id: payoutRequest.id,
+                    counsellor_id: payoutRequest.counsellor_id,
+                    counsellor_name: payoutRequest.counsellor.name,
+                },
             });
+            console.log(`✅ Stripe transfer created: ${transfer.id} for $${payoutRequest.amount} AUD`);
             yield balance_services_1.BalanceService.deductBalance(payoutRequest.counsellor_id, Number(payoutRequest.amount), `Payout transfer - Request #${payoutRequest.id.slice(-8)}`, payout_request_id, 'payout_request');
             const completedRequest = yield tx.payoutRequest.update({
                 where: { id: payout_request_id },
@@ -249,6 +276,7 @@ const executePayout = (payout_request_id) => __awaiter(void 0, void 0, void 0, f
                     stripe_transfer_id: transfer.id,
                 },
             });
+            console.log(`✅ Payout completed: ${payoutRequest.id} - Transfer ID: ${transfer.id}`);
             return completedRequest;
         }
         catch (error) {
@@ -256,8 +284,9 @@ const executePayout = (payout_request_id) => __awaiter(void 0, void 0, void 0, f
                 where: { id: payout_request_id },
                 data: { status: 'FAILED' },
             });
-            console.error('Stripe transfer failed:', error);
-            throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Payout transfer failed');
+            console.error('❌ Stripe transfer failed:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, `Payout transfer failed: ${errorMessage}`);
         }
     }));
 });

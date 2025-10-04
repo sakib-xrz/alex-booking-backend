@@ -20,6 +20,32 @@ const adjustBalanceSchema = zod_1.z.object({
             .max(500, 'Description too long'),
     }),
 });
+const setBalanceValuesSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        current_balance: zod_1.z
+            .number({
+            invalid_type_error: 'Current balance must be a number',
+        })
+            .min(0, 'Current balance cannot be negative')
+            .optional(),
+        total_earned: zod_1.z
+            .number({
+            invalid_type_error: 'Total earned must be a number',
+        })
+            .min(0, 'Total earned cannot be negative')
+            .optional(),
+        total_withdrawn: zod_1.z
+            .number({
+            invalid_type_error: 'Total withdrawn must be a number',
+        })
+            .min(0, 'Total withdrawn cannot be negative')
+            .optional(),
+    }).refine((data) => data.current_balance !== undefined ||
+        data.total_earned !== undefined ||
+        data.total_withdrawn !== undefined, {
+        message: 'At least one balance field must be provided',
+    }),
+});
 const balanceFiltersSchema = zod_1.z.object({
     query: zod_1.z.object({
         search: zod_1.z.string().optional(),
@@ -61,6 +87,7 @@ const counsellorBalanceFiltersSchema = zod_1.z.object({
 });
 exports.default = {
     adjustBalanceSchema,
+    setBalanceValuesSchema,
     balanceFiltersSchema,
     counsellorBalanceFiltersSchema,
 };
